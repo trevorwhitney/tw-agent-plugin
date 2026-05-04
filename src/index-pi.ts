@@ -10,6 +10,7 @@ import {
   specReviewPrompts,
 } from "./review/prompts/index.js";
 import { createPiRunner } from "./pi/runner.js";
+import { getSuperpowersBootstrap } from "./pi/superpowers-bootstrap.js";
 import { BEADS_AWARENESS } from "./beads/index.js";
 import { BEADS_GUIDANCE, loadCommands as loadBeadsCommands } from "./beads/vendor.js";
 import { loadCommands as loadWorkmuxCommands } from "./workmux/index.js";
@@ -71,12 +72,18 @@ function getBeadsPrimeOutput(cwd?: string): string {
 // Extension
 // ---------------------------------------------------------------------------
 
-export default function (pi: ExtensionAPI) {
+export default function(pi: ExtensionAPI) {
   // Track which sessions have had beads context injected
   const injectedSessions = new Set<string>();
 
   // ── System prompt: tool priority rules + beads awareness ──────────────
   pi.on("before_agent_start", async (event, ctx) => {
+    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + BEADS_AWARENESS;
+    const bootstrap = await getSuperpowersBootstrap();
+    if (bootstrap) {
+      extraSystemPrompt += "\n\n" + bootstrap;
+    }
+
     let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + BEADS_AWARENESS;
 
     // Inject beads context as a message on the first turn of each session
