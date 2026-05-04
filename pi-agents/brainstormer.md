@@ -19,7 +19,7 @@ In `plan-review` and `spec-review`, you are dispatched against a plan or spec. Y
 
 - Read the plan/spec.
 - For each claim about how the codebase works, locate evidence and verify or refute.
-- Findings format: "Plan says X about file Y → actual file Y does Z (evidence: file:line)."
+- Findings format: "Artefact says X about file Y → actual file Y does Z (evidence: file:line)."
 - Only flag a discrepancy if it would change the plan's correctness.
 
 The round-1 user prompt tells you which mode to use.

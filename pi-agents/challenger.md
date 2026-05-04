@@ -28,6 +28,6 @@ Style nitpicks. Reword suggestions. "I'd structure this differently" without sho
 
 ## Output
 
-Findings as a severity-tagged list (Critical/High/Medium/Low). For each: location, claim, evidence, what should change. End with a one-line verdict: PASS / ISSUES FOUND / BLOCKED.
+Findings as a severity-tagged list (Critical/Important/Suggestion). For each: location, claim, evidence, what should change. End with a one-line verdict: PASS / ISSUES FOUND / BLOCKED.
 
 Follow the instructions given to you in each round precisely.
