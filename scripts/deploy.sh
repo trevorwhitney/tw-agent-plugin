@@ -302,6 +302,36 @@ link_item "${PLUGIN_DIR}/src" \
 	"${PI_EXT_DIR}" \
 	"extension: tw-plugin -> src/"
 
+# Pi subagent extension (bundled from pi's examples)
+# This gives pi the 'subagent' tool for delegating to specialized agents.
+PI_SUBAGENT_SRC="$(dirname "$(command -v pi 2>/dev/null || echo /dev/null)")/../lib/node_modules/pi-monorepo/examples/extensions/subagent"
+PI_SUBAGENT_DST="${PI_EXTENSIONS}/subagent"
+if [ -d "$PI_SUBAGENT_SRC" ]; then
+	mkdir -p "$PI_SUBAGENT_DST"
+	if command -v rsync &>/dev/null; then
+		rsync -rc --delete "${PI_SUBAGENT_SRC}/" "${PI_SUBAGENT_DST}/"
+	else
+		rm -rf "$PI_SUBAGENT_DST"
+		cp -R "$PI_SUBAGENT_SRC" "$PI_SUBAGENT_DST"
+	fi
+	echo "  [copy] subagent extension"
+else
+	# Fallback: try nix store path
+	PI_SUBAGENT_NIX="$(find /nix/store -maxdepth 1 -name 'pi-coding-agent-*' -type d 2>/dev/null | sort -V | tail -1)/lib/node_modules/pi-monorepo/examples/extensions/subagent"
+	if [ -d "$PI_SUBAGENT_NIX" ]; then
+		mkdir -p "$PI_SUBAGENT_DST"
+		if command -v rsync &>/dev/null; then
+			rsync -rc --delete "${PI_SUBAGENT_NIX}/" "${PI_SUBAGENT_DST}/"
+		else
+			rm -rf "$PI_SUBAGENT_DST"
+			cp -R "$PI_SUBAGENT_NIX" "$PI_SUBAGENT_DST"
+		fi
+		echo "  [copy] subagent extension (from nix store)"
+	else
+		echo "  [skip] subagent extension (source not found)"
+	fi
+fi
+
 # Pi prompt templates
 mkdir -p "$PI_PROMPTS"
 for f in "${PLUGIN_DIR}/prompts"/*.md; do
