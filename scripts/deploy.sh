@@ -119,11 +119,24 @@ link_item "${PLUGIN_DIR}/dist/opencode/index.js" \
 	"tw-opencode-plugin"
 
 # ── Superpowers ───────────────────────────────────────────────
-SUPERPOWERS_DIR="${OPENCODE_DIR}/superpowers"
+# Cloned to a harness-neutral location since both opencode and pi consume it.
+# Migrated from ${OPENCODE_DIR}/superpowers (handled below).
+SUPERPOWERS_DIR="${HOME}/.agents/superpowers"
 SUPERPOWERS_REPO="https://github.com/trevorwhitney/superpowers.git"
+LEGACY_SUPERPOWERS_DIR="${OPENCODE_DIR}/superpowers"
+mkdir -p "$(dirname "$SUPERPOWERS_DIR")"
 
 echo ""
 echo "Superpowers:"
+
+# Migrate legacy clone location if present
+if [ -d "$LEGACY_SUPERPOWERS_DIR/.git" ] && [ ! -e "$SUPERPOWERS_DIR" ]; then
+	echo "  [migrate] ${LEGACY_SUPERPOWERS_DIR} -> ${SUPERPOWERS_DIR}"
+	mv "$LEGACY_SUPERPOWERS_DIR" "$SUPERPOWERS_DIR"
+elif [ -d "$LEGACY_SUPERPOWERS_DIR" ] && [ -d "$SUPERPOWERS_DIR/.git" ]; then
+	echo "  [remove] stale legacy clone at ${LEGACY_SUPERPOWERS_DIR}"
+	rm -rf "$LEGACY_SUPERPOWERS_DIR"
+fi
 
 if [ -d "$SUPERPOWERS_DIR/.git" ]; then
 	# Ensure we're pointed at the right remote (handles switch from upstream to fork)
@@ -291,9 +304,9 @@ if [ -d "${SUPERPOWERS_DIR}/agents" ]; then
 fi
 
 # Pi extension — symlink src/ as the extension directory.
-# Pi's jiti loader picks up index-pi.ts via the pi.extensions manifest
+# Pi's jiti loader picks up tw-pi.ts via the pi.extensions manifest
 # in src/pi-package.json (symlinked as package.json inside the extension).
-# Since index-pi.ts lives at the src/ root alongside its dependencies
+# Since tw-pi.ts lives at the src/ root alongside its dependencies
 # (tool-priority-rules.ts, review/, shared/, pi/runner.ts), all imports
 # resolve naturally with no extra symlinks.
 PI_EXTENSIONS="${PI_AGENT_DIR}/extensions"

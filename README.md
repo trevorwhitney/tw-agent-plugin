@@ -1,6 +1,6 @@
 # tw-plugin
 
-Personal coding agent plugin — skills, commands, agents, and tools for OpenCode and Claude Code.
+Personal coding agent plugin — skills, commands, agents, and tools for OpenCode, Claude Code, and Pi.
 
 ## Structure
 
@@ -8,8 +8,11 @@ Personal coding agent plugin — skills, commands, agents, and tools for OpenCod
 tw-plugin/
 ├── .claude-plugin/plugin.json  # Claude Code plugin manifest
 ├── CLAUDE.md                   # Tool-priority rules for Claude Code
-├── src/index.ts                # OpenCode plugin entry point (custom tools & hooks)
-├── skills/                     # Shared skills (both platforms)
+├── src/
+│   ├── opencode/index.ts       # OpenCode plugin entry point (custom tools & hooks)
+│   ├── tw-pi.ts                # Pi extension entry point (custom tools & hooks)
+│   └── pi-package.json         # Pi extension manifest (linked as package.json)
+├── skills/                     # Shared skills (all platforms)
 │   ├── github/
 │   ├── grafana/
 │   ├── fix-correctness-bug/
@@ -19,9 +22,11 @@ tw-plugin/
 │   ├── writing-plans/
 │   ├── subagent-driven-development/
 │   └── security-review/
-├── commands/                   # Shared slash commands (both platforms)
-├── agents/                     # Shared agent definitions (both platforms)
-└── scripts/deploy.sh           # Deploys to both OpenCode and Claude Code configs
+├── commands/                   # Shared slash commands (OpenCode + Claude Code)
+├── agents/                     # Shared agent definitions (OpenCode + Claude Code)
+├── pi-agents/                  # Pi-specific agent definitions
+├── prompts/                    # Pi prompt templates
+└── scripts/deploy.sh           # Deploys to OpenCode, Claude Code, and Pi configs
 ```
 
 ## Installation
@@ -59,17 +64,36 @@ bash scripts/deploy.sh
 
 After install, skills are available as slash commands prefixed with `/tw:` (e.g. `/tw:code-review`).
 
+### Pi
+
+The deploy script also installs into `~/.pi/agent/`:
+
+- Skills (including the bundled superpowers fork) → `~/.pi/agent/skills/`
+- Agents → `~/.pi/agent/agents/` (from both `pi-agents/` and superpowers)
+- Prompt templates → `~/.pi/agent/prompts/`
+- The plugin extension is symlinked into `~/.pi/agent/extensions/tw-plugin/`, which provides the review pipeline tool, beads/workmux integration, and tool-priority rules via Pi's extension API
+- The bundled `subagent` example extension is also installed so Pi can dispatch subagents
+
+```bash
+npm install
+npm run build
+npm run deploy
+```
+
+Then restart Pi to pick up the changes.
+
 ## Platform differences
 
-| Feature                        | OpenCode                    | Claude Code                             |
-| ------------------------------ | --------------------------- | --------------------------------------- |
-| Skills                         | Yes                         | Yes                                     |
-| Commands (slash)               | Yes                         | Yes (prefixed `/tw:`)                   |
-| Agents                         | Yes                         | Yes                                     |
-| Custom tools (review pipeline) | Yes                         | No (requires JS plugin SDK)             |
-| Beads integration              | Yes                         | No (requires JS hooks)                  |
-| Workmux status                 | Yes                         | No (separate CC hooks in settings.json) |
-| Tool-priority rules            | Via system prompt injection | Via CLAUDE.md                           |
+| Feature                        | OpenCode                    | Claude Code                             | Pi                              |
+| ------------------------------ | --------------------------- | --------------------------------------- | ------------------------------- |
+| Skills                         | Yes                         | Yes                                     | Yes                             |
+| Commands (slash)               | Yes                         | Yes (prefixed `/tw:`)                   | No (uses prompts + agents)      |
+| Agents                         | Yes                         | Yes                                     | Yes (`pi-agents/` + superpowers) |
+| Prompt templates               | No                          | No                                      | Yes (`prompts/`)                |
+| Custom tools (review pipeline) | Yes                         | No (requires JS plugin SDK)             | Yes (via Pi extension)          |
+| Beads integration              | Yes                         | No (requires JS hooks)                  | Yes (via Pi extension)          |
+| Workmux status                 | Yes                         | No (separate CC hooks in settings.json) | Yes (via Pi extension)          |
+| Tool-priority rules            | Via system prompt injection | Via CLAUDE.md                           | Via system prompt injection     |
 
 ## Development
 
@@ -90,7 +114,9 @@ Detailed instructions for the agent when this skill is loaded.
 
 ### Adding a custom tool
 
-Edit `src/index.ts`:
+For OpenCode, edit `src/opencode/index.ts`. For Pi, edit `src/tw-pi.ts`. Most shared logic lives under `src/review/`, `src/beads/`, `src/workmux/`, and `src/shared/` so both entry points can reuse it.
+
+OpenCode example:
 
 ```typescript
 import type { Plugin } from "@opencode-ai/plugin";
@@ -114,6 +140,8 @@ export default (async (_ctx) => {
 ```
 
 Then rebuild: `npm run build`.
+
+For Pi, custom tools are registered through the `ExtensionAPI` in `src/tw-pi.ts` — see the existing review pipeline registration there for a working example.
 
 ### Adding a slash command
 
@@ -142,42 +170,93 @@ Command template that the agent receives when `/command-name` is invoked. Use `$
 
 ## Configuration
 
-The review pipeline (used by `/code-review`, `/plan-review`, `/spec-review`) is configured via `~/.config/opencode/tw-plugin.json`.
+The review pipeline (used by `/code-review`, `/plan-review`, `/spec-review`) is configured per host. OpenCode and Pi each load their own config file with a different schema, because Pi reviews dispatch persona-diverse agents (one persona per role) while OpenCode reviews dispatch model-diverse critics (same persona, different models).
 
-### Review critics
+### OpenCode — model-diverse critics
 
-Choose which critic agents participate in reviews by listing them in the `review.agents` array. Available critics:
+Config file: `~/.config/opencode/tw-plugin.json`. Choose which critic agents participate by listing them in `review.agents`. Available critics:
 
 - `critic-codex` — OpenAI Codex
 - `critic-opus` — Anthropic Opus
-- `critic-gemini` — Google Gemini
 - `critic-sonnet` — Anthropic Sonnet
+
+Example:
+
+```json
+{
+  "review": {
+    "agents": ["critic-sonnet", "critic-opus", "critic-codex"],
+    "timeoutMs": 300000
+  }
+}
+```
+
+Defaults when no config file is present:
+
+```json
+{
+  "review": {
+    "agents": ["critic-codex", "critic-opus", "critic-sonnet"],
+    "timeoutMs": 300000
+  }
+}
+```
+
+| Field              | Type       | Default                                            | Description                       |
+| ------------------ | ---------- | -------------------------------------------------- | --------------------------------- |
+| `review.agents`    | `string[]` | `["critic-codex", "critic-opus", "critic-sonnet"]` | Critic agents used for all review types |
+| `review.timeoutMs` | `number`   | `300000` (5 min)                                   | Per-agent timeout in milliseconds |
+
+For backwards compatibility, the legacy `review.agentA` / `review.agentB` two-critic shape is still accepted.
+
+### Pi — persona-diverse review ensembles
+
+Config file: `~/.pi/agent/tw-plugin.json`. Pi uses a **per-review-type** schema so each review (`code-review`, `plan-review`, `spec-review`) gets its own ensemble of personas. Each persona is a `.md` file in `pi-agents/` (deployed to `~/.pi/agent/agents/`) with its own model, tools, and system prompt.
+
+Available personas (see `pi-agents/`):
+
+- `code-reviewer` — quality + codebase consistency (Codex)
+- `spec-reviewer` — spec-to-implementation mapping (Sonnet)
+- `security-reviewer` — vulnerability analysis, opt-in (Codex)
+- `challenger` — adversarial review, finds gaps and unsupported claims (Opus)
+- `brainstormer` — codebase research / grounding (Sonnet)
+- `planner` — spec → implementation plan (Opus)
 
 Example config:
 
 ```json
 {
   "review": {
-    "agents": ["critic-sonnet", "critic-opus", "critic-codex"]
-  }
-}
-```
-
-If no config file is present, the defaults are used:
-
-```json
-{
-  "review": {
-    "agents": ["critic-codex", "critic-opus", "critic-gemini"],
+    "code-review": { "agents": ["code-reviewer", "spec-reviewer", "challenger"] },
+    "plan-review": { "agents": ["challenger", "brainstormer"] },
+    "spec-review": { "agents": ["challenger", "brainstormer"] },
     "timeoutMs": 300000
   }
 }
 ```
 
-| Field              | Type       | Default                                        | Description                          |
-| ------------------ | ---------- | ---------------------------------------------- | ------------------------------------ |
-| `review.agents`    | `string[]` | `["critic-codex", "critic-opus", "critic-gemini"]` | Critic agents to use in reviews  |
-| `review.timeoutMs` | `number`   | `300000` (5 min)                               | Per-agent timeout in milliseconds    |
+Defaults when no config file is present (same as the example above):
+
+| Review type   | Default ensemble                                    |
+| ------------- | --------------------------------------------------- |
+| `code-review` | `code-reviewer`, `spec-reviewer`, `challenger`      |
+| `plan-review` | `challenger`, `brainstormer`                        |
+| `spec-review` | `challenger`, `brainstormer`                        |
+
+Fallbacks (in order) when a per-type entry is missing:
+
+1. Per-type `review.<type>.agents` array.
+2. Flat `review.agents` array (fanned out to all three types).
+3. Legacy `review.agentA` / `review.agentB`.
+4. Built-in defaults above.
+
+| Field                       | Type       | Description                              |
+| --------------------------- | ---------- | ---------------------------------------- |
+| `review.<type>.agents`      | `string[]` | Per-type ensemble (persona names)        |
+| `review.agents`             | `string[]` | Optional flat fallback for all types     |
+| `review.timeoutMs`          | `number`   | Per-agent timeout in milliseconds (5 min default) |
+
+Adding a new persona: drop a new `<name>.md` file in `pi-agents/` with `name`, `description`, `model`, and (optionally) `tools` frontmatter, run `npm run deploy`, then reference it by name in the config.
 
 ## Useful commands
 
@@ -185,5 +264,5 @@ If no config file is present, the defaults are used:
 npm run build      # Compile TypeScript
 npm run dev        # Watch mode
 npm run typecheck  # Type-check without emitting
-npm run deploy     # Deploy to OpenCode and Claude Code configs
+npm run deploy     # Deploy to OpenCode, Claude Code, and Pi configs
 ```
