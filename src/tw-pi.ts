@@ -1,4 +1,5 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Skill } from "@mariozechner/pi-coding-agent";
+import { readFile } from "node:fs/promises";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { TOOL_PRIORITY_RULES } from "./tool-priority-rules.js";
@@ -75,9 +76,14 @@ function getBeadsPrimeOutput(cwd?: string): string {
 export default function(pi: ExtensionAPI) {
   // Track which sessions have had beads context injected
   const injectedSessions = new Set<string>();
+  // Skills discovered by pi, updated on each turn via before_agent_start
+  let discoveredSkills: Skill[] = [];
 
   // ── System prompt: tool priority rules + beads awareness ──────────────
   pi.on("before_agent_start", async (event, ctx) => {
+    // Capture discovered skills so the skill tool can resolve by name
+    discoveredSkills = event.systemPromptOptions.skills ?? [];
+
     let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + BEADS_AWARENESS;
     const bootstrap = await getSuperpowersBootstrap();
     if (bootstrap) {
@@ -183,6 +189,51 @@ export default function(pi: ExtensionAPI) {
         },
       });
     }
+  });
+
+  // ── Register the skill tool ───────────────────────────────────────────
+  pi.registerTool({
+    name: "skill",
+    label: "Load Skill",
+    description:
+      "Load a skill by name. Returns the full skill content (instructions, checklists, workflows). " +
+      "Use this when a task matches a skill description from the available_skills list. " +
+      "You MUST invoke this tool before starting work whenever a skill might apply.",
+    parameters: Type.Object({
+      name: Type.String({
+        description: "The skill name from the available_skills list (e.g. 'brainstorming', 'test-driven-development')",
+      }),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+      const skill = discoveredSkills.find((s) => s.name === params.name);
+      if (!skill) {
+        const available = discoveredSkills.map((s) => s.name).join(", ");
+        return {
+          content: [{
+            type: "text",
+            text: `Skill not found: "${params.name}". Available skills: ${available}`,
+          }],
+          details: {},
+          isError: true,
+        };
+      }
+      try {
+        const content = await readFile(skill.filePath, "utf-8");
+        return {
+          content: [{ type: "text", text: content }],
+          details: { skillName: skill.name, filePath: skill.filePath },
+        };
+      } catch (err) {
+        return {
+          content: [{
+            type: "text",
+            text: `Failed to read skill file: ${skill.filePath}: ${err instanceof Error ? err.message : String(err)}`,
+          }],
+          details: {},
+          isError: true,
+        };
+      }
+    },
   });
 
   // ── Register the review pipeline tool ─────────────────────────────────

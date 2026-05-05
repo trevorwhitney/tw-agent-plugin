@@ -28,7 +28,7 @@ const TOOL_MAPPING = `**Tool Mapping for Pi:**
 When skills reference tools that don't exist in pi, substitute these:
 - \`TodoWrite\` → use beads (\`bd\` CLI via \`bash\`); see beads guidance in your context for commands.
 - \`Task\` tool / subagent dispatch → use the \`subagent\` tool (single / parallel / chain modes).
-- \`Skill\` tool → there is no native skill tool in pi. To load a skill body, \`read\` the file directly (e.g. \`~/.pi/agent/skills/superpowers/<name>/SKILL.md\`).
+- \`Skill\` tool → use the \`skill\` tool with the skill name (e.g. \`skill("brainstorming")\`). This loads the full skill content by name from the available_skills list.
 - \`Read\`, \`Write\`, \`Edit\`, \`Bash\`, \`Glob\`, \`Grep\` → pi has \`read\`, \`write\`, \`edit\`, \`bash\` natively (use \`bash\` with \`rg\`/\`find\` for glob/grep).
 
 **Skills location for pi:**
