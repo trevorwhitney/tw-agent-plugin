@@ -1,5 +1,5 @@
 import { type Plugin, tool } from "@opencode-ai/plugin";
-import { loadReviewConfig } from "../review/config.js";
+import { loadOpencodeReviewConfig } from "../review/config.js";
 import { runReviewPipeline } from "../review/pipeline.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
 import type { EventSessionCompacted } from "@opencode-ai/sdk";
@@ -84,14 +84,15 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
               : args.type === "plan-review"
                 ? planReviewPrompts
                 : specReviewPrompts;
-          const config = await loadReviewConfig();
+          const config = await loadOpencodeReviewConfig();
+          const pipelineConfig = { agents: config.agents, timeoutMs: config.timeoutMs };
 
           const runner = createOpencodeRunner(client, context.sessionID);
           const synthesisText = await runReviewPipeline(
             runner,
             args.target,
             prompts,
-            config,
+            pipelineConfig,
           );
 
           return synthesisText;

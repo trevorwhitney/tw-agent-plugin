@@ -1,16 +1,17 @@
 import type { PhaseResult, PromptSet, LabeledReview, RunSubagent } from "./types.js";
-import type { ReviewConfig } from "../shared/config.js";
 
 /** Alphabet labels: index 0 → "A", 1 → "B", 2 → "C", etc. */
 function reviewerLabel(index: number): string {
   return `Reviewer ${String.fromCharCode(65 + index)}`;
 }
 
+type PipelineConfig = { agents: string[]; timeoutMs: number };
+
 export async function runReviewPipeline(
   runSubagent: RunSubagent,
   target: string,
   prompts: PromptSet,
-  config: ReviewConfig,
+  config: PipelineConfig,
 ): Promise<string> {
   const agents = config.agents;
   const labels = agents.map((_, i) => reviewerLabel(i));

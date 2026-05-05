@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { TOOL_PRIORITY_RULES } from "./tool-priority-rules.js";
-import { loadReviewConfig } from "./review/config.js";
+import { loadPiReviewConfig } from "./review/config.js";
 import { runReviewPipeline } from "./review/pipeline.js";
 import {
   codeReviewPrompts,
@@ -212,7 +212,9 @@ export default function(pi: ExtensionAPI) {
             ? planReviewPrompts
             : specReviewPrompts;
 
-      const config = await loadReviewConfig();
+      const config = await loadPiReviewConfig();
+      const ensemble = config[params.type];
+      const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
       const { runSubagent, cleanup } = createPiRunner(ctx.cwd, signal ?? undefined);
 
       try {
@@ -220,7 +222,7 @@ export default function(pi: ExtensionAPI) {
           runSubagent,
           params.target,
           prompts,
-          config,
+          pipelineConfig,
         );
         return {
           content: [{ type: "text", text: synthesis }],
