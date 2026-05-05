@@ -29,7 +29,7 @@ beforeEach(async () => {
 describe("loadPiPluginConfig", () => {
   it("returns persona-name defaults when file is missing", async () => {
     const c = await loadPiPluginConfig({ configPath: piPath() });
-    expect(c.review["code-review"].agents).toEqual(["code-reviewer", "spec-reviewer", "challenger"]);
+    expect(c.review["code-review"].agents).toEqual(["code-reviewer", "challenger", "performance-reviewer"]);
     expect(c.review["plan-review"].agents).toEqual(["challenger", "brainstormer"]);
     expect(c.review["spec-review"].agents).toEqual(["challenger", "brainstormer"]);
   });
@@ -79,25 +79,56 @@ describe("loadPiPluginConfig", () => {
 });
 
 describe("loadOpencodePluginConfig", () => {
-  it("returns existing default order when file is missing", async () => {
+  it("returns persona-name defaults when file is missing", async () => {
     const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
-    // CRITICAL: preserve current array order; do not silently rearrange.
-    expect(c.review.agents).toEqual(["critic-codex", "critic-opus", "critic-sonnet"]);
+    expect(c.review["code-review"].agents).toEqual(["code-reviewer", "challenger", "performance-reviewer"]);
+    expect(c.review["plan-review"].agents).toEqual(["challenger", "brainstormer"]);
+    expect(c.review["spec-review"].agents).toEqual(["challenger", "brainstormer"]);
   });
 
-  it("reads flat agents array", async () => {
+  it("reads per-type keys when present", async () => {
     await writeFile(opencodePath(), JSON.stringify({
-      review: { agents: ["critic-sonnet", "critic-opus"] },
+      review: {
+        "code-review": { agents: ["a", "b"] },
+        "plan-review": { agents: ["c"] },
+        "spec-review": { agents: ["d", "e"] },
+      },
     }));
     const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
-    expect(c.review.agents).toEqual(["critic-sonnet", "critic-opus"]);
+    expect(c.review["code-review"].agents).toEqual(["a", "b"]);
+    expect(c.review["plan-review"].agents).toEqual(["c"]);
+    expect(c.review["spec-review"].agents).toEqual(["d", "e"]);
+  });
+
+  it("fans flat agents array out to all three types", async () => {
+    await writeFile(opencodePath(), JSON.stringify({
+      review: { agents: ["x", "y"] },
+    }));
+    const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
+    expect(c.review["code-review"].agents).toEqual(["x", "y"]);
+    expect(c.review["plan-review"].agents).toEqual(["x", "y"]);
+    expect(c.review["spec-review"].agents).toEqual(["x", "y"]);
+  });
+
+  it("fills missing per-type keys from flat fallback", async () => {
+    await writeFile(opencodePath(), JSON.stringify({
+      review: {
+        "code-review": { agents: ["specific"] },
+        agents: ["generic"],
+      },
+    }));
+    const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
+    expect(c.review["code-review"].agents).toEqual(["specific"]);
+    expect(c.review["plan-review"].agents).toEqual(["generic"]);
+    expect(c.review["spec-review"].agents).toEqual(["generic"]);
   });
 
   it("supports legacy agentA/agentB", async () => {
     await writeFile(opencodePath(), JSON.stringify({
-      review: { agentA: "critic-codex", agentB: "critic-opus" },
+      review: { agentA: "alpha", agentB: "beta" },
     }));
     const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
-    expect(c.review.agents).toEqual(["critic-codex", "critic-opus"]);
+    expect(c.review["code-review"].agents).toEqual(["alpha", "beta"]);
+    expect(c.review["plan-review"].agents).toEqual(["alpha", "beta"]);
   });
 });

@@ -102,6 +102,13 @@ for agent_file in "${PLUGIN_DIR}/agents"/*.md; do
 	agent_name="$(basename "$agent_file")"
 	copy_item "$agent_file" "${AGENTS_TARGET}/${agent_name}" "$agent_name"
 done
+# Clean up legacy critic agents replaced by persona system
+for stale_agent in critic-codex.md critic-opus.md critic-sonnet.md critic-gemini.md facilitator.md; do
+	if [ -f "${AGENTS_TARGET}/${stale_agent}" ]; then
+		echo "  [remove] legacy agent: ${stale_agent}"
+		rm "${AGENTS_TARGET}/${stale_agent}"
+	fi
+done
 
 # ── AGENTS.md (global config) ─────────────────────────────────
 echo ""

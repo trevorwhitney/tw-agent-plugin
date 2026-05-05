@@ -18,7 +18,7 @@ export type PiReviewConfig = {
 export type PiPluginConfig = { review: PiReviewConfig };
 
 const PI_DEFAULT_ENSEMBLES: PiReviewConfig = {
-  "code-review": { agents: ["code-reviewer", "spec-reviewer", "challenger"] },
+  "code-review": { agents: ["code-reviewer", "challenger", "performance-reviewer"] },
   "plan-review": { agents: ["challenger", "brainstormer"] },
   "spec-review": { agents: ["challenger", "brainstormer"] },
   timeoutMs: DEFAULT_TIMEOUT_MS,
@@ -82,16 +82,46 @@ export async function loadPiReviewConfig(
 
 // ────────────────────────── OpenCode side ──────────────────────────
 
-export type OpencodeReviewConfig = { agents: string[]; timeoutMs: number };
+export type OpencodeReviewConfig = {
+  "code-review": EnsembleConfig;
+  "plan-review": EnsembleConfig;
+  "spec-review": EnsembleConfig;
+  timeoutMs: number;
+};
 export type OpencodePluginConfig = { review: OpencodeReviewConfig };
 
-const OPENCODE_DEFAULTS: OpencodeReviewConfig = {
-  // Preserve historical order: codex first, then opus, then sonnet.
-  agents: ["critic-codex", "critic-opus", "critic-sonnet"],
+const OPENCODE_DEFAULT_ENSEMBLES: OpencodeReviewConfig = {
+  "code-review": { agents: ["code-reviewer", "challenger", "performance-reviewer"] },
+  "plan-review": { agents: ["challenger", "brainstormer"] },
+  "spec-review": { agents: ["challenger", "brainstormer"] },
   timeoutMs: DEFAULT_TIMEOUT_MS,
 };
 
 const OPENCODE_CONFIG_PATH = join(homedir(), ".config", "opencode", "tw-plugin.json");
+
+function legacyOpencodeAgentArray(raw: any): string[] | null {
+  const review = raw?.review;
+  if (Array.isArray(review?.agents) && review.agents.length > 0) {
+    return [...review.agents];
+  }
+  if (review?.agentA || review?.agentB) {
+    return [
+      review.agentA ?? OPENCODE_DEFAULT_ENSEMBLES["code-review"].agents[0],
+      review.agentB ?? OPENCODE_DEFAULT_ENSEMBLES["code-review"].agents[1],
+    ];
+  }
+  return null;
+}
+
+function resolveOpencodeEnsemble(type: ReviewType, raw: any): EnsembleConfig {
+  const perType = raw?.review?.[type];
+  if (perType && Array.isArray(perType.agents) && perType.agents.length > 0) {
+    return { agents: perType.agents };
+  }
+  const legacy = legacyOpencodeAgentArray(raw);
+  if (legacy) return { agents: legacy };
+  return { agents: [...OPENCODE_DEFAULT_ENSEMBLES[type].agents] };
+}
 
 export async function loadOpencodePluginConfig(
   opts: { configPath?: string } = {},
@@ -103,23 +133,17 @@ export async function loadOpencodePluginConfig(
   } catch {
     raw = {};
   }
-  const review = raw?.review;
-  let agents: string[];
-  if (Array.isArray(review?.agents) && review.agents.length > 0) {
-    agents = [...review.agents];
-  } else if (review?.agentA || review?.agentB) {
-    agents = [
-      review.agentA ?? OPENCODE_DEFAULTS.agents[0],
-      review.agentB ?? OPENCODE_DEFAULTS.agents[1],
-    ];
-  } else {
-    agents = [...OPENCODE_DEFAULTS.agents];
-  }
   const timeoutMs =
-    typeof review?.timeoutMs === "number" && review.timeoutMs > 0
-      ? review.timeoutMs
+    typeof raw?.review?.timeoutMs === "number" && raw.review.timeoutMs > 0
+      ? raw.review.timeoutMs
       : DEFAULT_TIMEOUT_MS;
-  return { review: { agents, timeoutMs } };
+  const review: OpencodeReviewConfig = {
+    "code-review": resolveOpencodeEnsemble("code-review", raw),
+    "plan-review": resolveOpencodeEnsemble("plan-review", raw),
+    "spec-review": resolveOpencodeEnsemble("spec-review", raw),
+    timeoutMs,
+  };
+  return { review };
 }
 
 export async function loadOpencodeReviewConfig(

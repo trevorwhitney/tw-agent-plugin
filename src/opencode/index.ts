@@ -85,7 +85,8 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
                 ? planReviewPrompts
                 : specReviewPrompts;
           const config = await loadOpencodeReviewConfig();
-          const pipelineConfig = { agents: config.agents, timeoutMs: config.timeoutMs };
+          const ensemble = config[args.type];
+          const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
 
           const runner = createOpencodeRunner(client, context.sessionID);
           const synthesisText = await runReviewPipeline(
