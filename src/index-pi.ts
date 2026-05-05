@@ -84,8 +84,6 @@ export default function(pi: ExtensionAPI) {
       extraSystemPrompt += "\n\n" + bootstrap;
     }
 
-    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + BEADS_AWARENESS;
-
     // Inject beads context as a message on the first turn of each session
     const sessionFile = ctx.sessionManager.getSessionFile();
     const sessionKey = sessionFile ?? "ephemeral";
