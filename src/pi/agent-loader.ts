@@ -21,7 +21,14 @@ function parseAgentFile(path: string, raw: string): LoadedAgent {
     if (!line.trim()) continue;
     const kv = line.match(KEY_VALUE_RE);
     if (!kv) continue;
-    fields[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");
+    let value = kv[2].trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    fields[kv[1]] = value;
   }
 
   if (!fields.model) throw new Error(`model field missing in frontmatter: ${path}`);

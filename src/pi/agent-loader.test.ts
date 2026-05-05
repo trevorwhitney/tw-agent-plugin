@@ -40,7 +40,7 @@ Body.
     `---
 name: empty-tools
 model: anthropic/claude-haiku-4-5
-tools:
+tools:   
 ---
 
 Body.
