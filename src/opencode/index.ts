@@ -11,6 +11,7 @@ import {
 } from "../beads/index.js";
 import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
+import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
@@ -26,6 +27,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     // always knows to prefer CLI tools without needing to load a skill.
     "experimental.chat.system.transform": async (_input, output) => {
       (output.system ||= []).push(TOOL_PRIORITY_RULES);
+      output.system.push(OBSIDIAN_DOCS_RULES);
       output.system.push(BEADS_AWARENESS);
     },
 
