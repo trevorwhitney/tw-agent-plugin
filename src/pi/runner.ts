@@ -30,7 +30,7 @@ async function spawnAgent(
   timeoutMs: number,
   signal?: AbortSignal,
 ): Promise<PhaseResult> {
-  const piArgs = ["--mode", "json", "-p", "--no-session", "--model", agent.model];
+  const piArgs = ["--mode", "json", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-context-files", "--model", agent.model];
   if (agent.tools) piArgs.push("--tools", agent.tools);
   piArgs.push("--append-system-prompt", systemPromptPath, prompt);
 
