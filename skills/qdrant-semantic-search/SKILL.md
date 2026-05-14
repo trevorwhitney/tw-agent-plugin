@@ -1,6 +1,7 @@
 ---
 name: qdrant-semantic-search
 description: Use when exploring code, answering architectural questions, finding code by intent or concept, or searching for patterns across a codebase. Triggers on questions like "how does X work", "where do we handle Y", or any exploration where exact names are unknown.
+disable-model-invocation: true
 ---
 
 # Qdrant Semantic Code Search

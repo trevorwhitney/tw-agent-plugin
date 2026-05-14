@@ -1,6 +1,7 @@
 ---
 name: github
 description: Interact with GitHub for PRs, issues, releases, actions, and repo management. Always prefer the gh CLI before falling back to GitHub MCP tools.
+disable-model-invocation: true
 ---
 
 # GitHub

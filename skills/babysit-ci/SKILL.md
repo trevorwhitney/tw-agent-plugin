@@ -2,6 +2,7 @@
 name: babysit-ci
 description: >
   Babysit CI for the current branch PR until all checks pass. Use when submitting a new PR to make sure it passes all the test etc.
+disable-model-invocation: true
 ---
 
 # Babysit CI for the current branch PR until all checks pass
