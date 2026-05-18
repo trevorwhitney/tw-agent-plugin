@@ -1,7 +1,6 @@
-import type { ExtensionAPI, Skill } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, Skill } from "@earendil-works/pi-coding-agent";
 import { readFile } from "node:fs/promises";
-import { Type } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-ai";
+import { Type, StringEnum } from "@earendil-works/pi-ai";
 import { TOOL_PRIORITY_RULES } from "./tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "./obsidian-docs-rules.js";
 import { loadPiReviewConfig } from "./review/config.js";
