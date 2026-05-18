@@ -12,6 +12,7 @@ import {
 import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
+import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
@@ -28,6 +29,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     "experimental.chat.system.transform": async (_input, output) => {
       (output.system ||= []).push(TOOL_PRIORITY_RULES);
       output.system.push(OBSIDIAN_DOCS_RULES);
+      output.system.push(GIT_COMMIT_RULES);
       output.system.push(BEADS_AWARENESS);
     },
 
