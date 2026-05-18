@@ -1,6 +1,7 @@
 ---
 name: grafana
 description: Query metrics, investigate alerts, analyze logs/traces, and interact with Grafana. Always try grafana-assistant CLI before falling back to Grafana MCP tools.
+disable-model-invocation: true
 ---
 
 # Grafana

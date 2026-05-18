@@ -1,6 +1,7 @@
 ---
 name: git-rebase
 description: Performs interactive rebases with smart commit management and conflict resolution. Use when rebasing branches, cleaning up commit history, resolving conflicts, or when the user mentions "rebase", "interactive rebase", "squash commits", or wants to update their branch with latest changes from main/develop.
+disable-model-invocation: true
 ---
 
 # Git Rebase Assistant
