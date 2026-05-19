@@ -6,9 +6,9 @@ The correct `origin` remote for this repo is:
 git@github.com:trevorwhitney/tw-agent-plugin.git
 ```
 
-**Never change the `origin` remote of this repo.** The `scripts/deploy.sh` script manages a *separate* repo (`~/.agents/superpowers`) whose remote is `https://github.com/trevorwhitney/superpowers.git`. These are two different repos. Do not run `git remote set-url origin` in this directory.
+**Never change the `origin` remote of this repo.** `scripts/deploy.sh` deploys this plugin to pi/opencode/claude, and as part of that it also syncs a *separate* repo at `~/.agents/superpowers` (remote: `https://github.com/trevorwhitney/superpowers.git`). These are two completely separate git repos. The `git remote set-url` call inside deploy.sh is scoped to `~/.agents/superpowers` via `git -C` — it must never be run without that flag in this directory.
 
-If you need to interact with the superpowers fork, use `git -C ~/.agents/superpowers` or work inside that directory explicitly.
+If you need to interact with the superpowers fork, use `git -C ~/.agents/superpowers <command>` or cd into that directory explicitly.
 
 # Worktrees
 
