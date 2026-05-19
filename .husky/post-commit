@@ -1,11 +1,2 @@
 bash scripts/build.sh
 bash scripts/deploy.sh
-
-# Guard: ensure the origin remote for THIS repo is never overwritten by deploy.sh
-# (deploy.sh manages ~/.agents/superpowers, not this repo)
-CORRECT_REMOTE="git@github.com:trevorwhitney/tw-agent-plugin.git"
-CURRENT_REMOTE="$(git remote get-url origin 2>/dev/null || true)"
-if [ "$CURRENT_REMOTE" != "$CORRECT_REMOTE" ]; then
-  echo "[post-commit] WARNING: origin was changed to '$CURRENT_REMOTE', restoring to $CORRECT_REMOTE"
-  git remote set-url origin "$CORRECT_REMOTE"
-fi

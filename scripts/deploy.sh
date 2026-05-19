@@ -378,5 +378,19 @@ for dir in "$PI_SKILLS" "${PI_SKILLS}/superpowers" "$PI_PROMPTS" "$PI_AGENTS" "$
 	done
 done
 
+# ── Guard: restore this repo's own remote if something clobbered it ─────────
+# deploy.sh manages ~/.agents/superpowers via 'git -C $SUPERPOWERS_DIR' and
+# never intentionally touches the tw-agent-plugin remote.  This check is a
+# safety net in case an agent ran 'git remote set-url origin' without the -C
+# scope, or some other script changed it.
+TW_PLUGIN_REMOTE="git@github.com:trevorwhitney/tw-agent-plugin.git"
+if git -C "$PLUGIN_DIR" rev-parse --git-dir &>/dev/null; then
+	current_tw_remote="$(git -C "$PLUGIN_DIR" remote get-url origin 2>/dev/null || true)"
+	if [ -n "$current_tw_remote" ] && [ "$current_tw_remote" != "$TW_PLUGIN_REMOTE" ]; then
+		echo "  [restore] origin was '$current_tw_remote', resetting to $TW_PLUGIN_REMOTE"
+		git -C "$PLUGIN_DIR" remote set-url origin "$TW_PLUGIN_REMOTE"
+	fi
+fi
+
 echo ""
 echo "Done. Restart OpenCode, Claude Code, and/or Pi to pick up changes."
