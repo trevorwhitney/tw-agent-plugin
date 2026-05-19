@@ -1,3 +1,15 @@
+# Git Remote
+
+The correct `origin` remote for this repo is:
+
+```
+git@github.com:trevorwhitney/tw-agent-plugin.git
+```
+
+**Never change the `origin` remote of this repo.** The `scripts/deploy.sh` script manages a *separate* repo (`~/.agents/superpowers`) whose remote is `https://github.com/trevorwhitney/superpowers.git`. These are two different repos. Do not run `git remote set-url origin` in this directory.
+
+If you need to interact with the superpowers fork, use `git -C ~/.agents/superpowers` or work inside that directory explicitly.
+
 # Worktrees
 
 Place worktrees as siblings to this project directory, under `~/workspace/project/`.
