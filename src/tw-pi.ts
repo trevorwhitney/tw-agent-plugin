@@ -161,20 +161,25 @@ export default function(pi: ExtensionAPI) {
   });
 
   // ── Register workmux commands ─────────────────────────────────────────
-  // Load commands synchronously at startup by kicking off the async load
-  // and registering when ready. Pi's jiti loader is synchronous for the
-  // default export, but registerCommand can be called at any time.
+  // Load commands asynchronously at startup. The pi context may become
+  // stale if a session replacement occurs before the promises resolve, so
+  // guard registerCommand with a try/catch.
   loadWorkmuxCommands().then((commands) => {
     if (!commands) return;
     for (const [name, cmd] of Object.entries(commands)) {
-      // name is "workmux:foo" — register as "/workmux:foo"
-      pi.registerCommand(name, {
-        description: cmd.description,
-        handler: async (args, _ctx) => {
-          const prompt = cmd.template.replace(/\$ARGUMENTS/g, args || "");
-          pi.sendUserMessage(prompt);
-        },
-      });
+      try {
+        // name is "workmux:foo" — register as "/workmux:foo"
+        pi.registerCommand(name, {
+          description: cmd.description,
+          handler: async (args, _ctx) => {
+            const prompt = cmd.template.replace(/\$ARGUMENTS/g, args || "");
+            pi.sendUserMessage(prompt);
+          },
+        });
+      } catch {
+        // Context went stale — commands will be re-registered on next load
+        break;
+      }
     }
   });
 
@@ -182,13 +187,18 @@ export default function(pi: ExtensionAPI) {
   loadBeadsCommands().then((commands) => {
     if (!commands) return;
     for (const [name, cmd] of Object.entries(commands)) {
-      pi.registerCommand(name, {
-        description: cmd.description,
-        handler: async (args, _ctx) => {
-          const prompt = cmd.template.replace(/\$ARGUMENTS/g, args || "");
-          pi.sendUserMessage(prompt);
-        },
-      });
+      try {
+        pi.registerCommand(name, {
+          description: cmd.description,
+          handler: async (args, _ctx) => {
+            const prompt = cmd.template.replace(/\$ARGUMENTS/g, args || "");
+            pi.sendUserMessage(prompt);
+          },
+        });
+      } catch {
+        // Context went stale — commands will be re-registered on next load
+        break;
+      }
     }
   });
 
