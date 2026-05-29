@@ -10,6 +10,17 @@ import {
   recordAssistantOutput,
 } from "../auto-continue.js";
 import {
+  getGoal,
+  setGoal,
+  clearGoal,
+  pauseGoal,
+  resumeGoal,
+  formatGoalStatus,
+  goalSystemPrompt,
+  goalCompactionContext,
+  scanForGoalMarkers,
+} from "../goal.js";
+import {
   loadCommands,
   loadAgent,
   createBeadsContextManager,
@@ -74,6 +85,68 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
       await beads.handleChatMessage(_input, output);
     },
 
+    "command.execute.before": async (input, output) => {
+      if (input.command !== "goal") return;
+
+      const args = input.arguments.trim();
+      const sub = args.toLowerCase();
+
+      if (!args) {
+        (output.parts as unknown[]).push({ type: "text", text: formatGoalStatus(input.sessionID) });
+        return;
+      }
+
+      if (["clear", "stop", "off", "reset", "none", "cancel"].includes(sub)) {
+        clearGoal(input.sessionID);
+        (output.parts as unknown[]).push({ type: "text", text: "Goal cleared." });
+        return;
+      }
+
+      if (sub === "pause") {
+        const paused = pauseGoal(input.sessionID);
+        (output.parts as unknown[]).push({
+          type: "text",
+          text: paused ? "Goal paused." : "No active goal to pause.",
+        });
+        return;
+      }
+
+      if (sub === "resume") {
+        const resumed = resumeGoal(input.sessionID);
+        (output.parts as unknown[]).push({
+          type: "text",
+          text: resumed ? "Goal resumed." : "No paused goal to resume.",
+        });
+        return;
+      }
+
+      if (sub === "status") {
+        (output.parts as unknown[]).push({ type: "text", text: formatGoalStatus(input.sessionID) });
+        return;
+      }
+
+      const goal = setGoal(input.sessionID, args);
+      (output.parts as unknown[]).push({
+        type: "text",
+        text: `Goal set: ${goal.objective}\n\nThe agent will keep all work aligned with this objective. End a response with [goal:complete] when done, or [goal:blocked] if you need user input.`,
+      });
+    },
+
+    "experimental.chat.system.transform": async (input, output) => {
+      if (!input.sessionID) return;
+      const goalPrompt = goalSystemPrompt(input.sessionID);
+      if (goalPrompt) {
+        output.system.push(goalPrompt);
+      }
+    },
+
+    "experimental.session.compacting": async (input, output) => {
+      const ctx = goalCompactionContext(input.sessionID);
+      if (ctx) {
+        output.context.push(ctx);
+      }
+    },
+
     event: async ({ event }) => {
       const type = event.type as string;
       switch (type) {
@@ -85,7 +158,10 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
           }
           if (status.type === "idle") {
             await $`workmux set-window-status done`.quiet().nothrow();
-            const result = await handleSessionIdle(client, sessionID);
+            const goal = getGoal(sessionID);
+            const result = await handleSessionIdle(client, sessionID, {
+              activeGoal: goal?.objective,
+            });
             if (result.continued) {
               await $`workmux set-window-status working`.quiet().nothrow();
             }
@@ -117,10 +193,17 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
             parts?: Array<{ type: string; text?: string }>;
           } | undefined;
           if (msgProps?.role === "assistant" && msgProps?.sessionID) {
-            const totalChars = (msgProps.parts ?? [])
-              .filter((p) => p.type === "text")
-              .reduce((sum, p) => sum + (p.text?.length ?? 0), 0);
-            recordAssistantOutput(msgProps.sessionID, totalChars);
+            const textParts = (msgProps.parts ?? []).filter((p) => p.type === "text");
+            const fullText = textParts.map((p) => p.text ?? "").join("\n");
+
+            // No-progress detection
+            recordAssistantOutput(msgProps.sessionID, fullText.length);
+
+            // Goal marker scanning
+            const marker = scanForGoalMarkers(msgProps.sessionID, fullText);
+            if (marker === "complete") {
+              setAutoContinue(false);
+            }
           }
           break;
         }
@@ -180,7 +263,15 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     },
 
     config: async (config) => {
-      config.command = { ...config.command, ...beadsCommands, ...workmuxCommands };
+      config.command = {
+        ...config.command,
+        ...beadsCommands,
+        ...workmuxCommands,
+        goal: {
+          template: "goal",
+          description: "Session goal. /goal <text> to set, /goal to show, /goal pause|resume|clear",
+        },
+      };
       config.agent = { ...config.agent, ...beadsAgents };
     },
   };
