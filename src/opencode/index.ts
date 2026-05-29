@@ -2,6 +2,8 @@ import { type Plugin, tool } from "@opencode-ai/plugin";
 import { loadOpencodeReviewConfig } from "../review/config.js";
 import { runReviewPipeline } from "../review/pipeline.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
+import { runCouncil } from "../council/tool.js";
+import { loadOpencodePluginConfig } from "../shared/config.js";
 import type { EventSessionStatus, EventSessionCompacted } from "@opencode-ai/sdk";
 import {
   setAutoContinue,
@@ -282,26 +284,71 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
            return astGrepSearch($, args.pattern, { lang: args.lang, path: args.path });
          },
        }),
-       "ast-grep-replace": tool({
-         description:
-           "Replace code using AST structural patterns (ast-grep). Safer than regex-based " +
-           "find-and-replace because it understands code structure. Requires 'sg' CLI.",
-         args: {
-           pattern: tool.schema.string().describe("AST pattern to match"),
-           replacement: tool.schema.string().describe(
-             "Replacement pattern. Use $VARNAME to reference captured nodes from the search pattern."
-           ),
-           lang: tool.schema.string().optional().describe("Language to parse as"),
-           path: tool.schema.string().optional().describe("File or directory path"),
-         },
-         async execute(args) {
-           return astGrepReplace($, args.pattern, args.replacement, {
-             lang: args.lang,
-             path: args.path,
-           });
-         },
-       }),
-     },
+        "ast-grep-replace": tool({
+          description:
+            "Replace code using AST structural patterns (ast-grep). Safer than regex-based " +
+            "find-and-replace because it understands code structure. Requires 'sg' CLI.",
+          args: {
+            pattern: tool.schema.string().describe("AST pattern to match"),
+            replacement: tool.schema.string().describe(
+              "Replacement pattern. Use $VARNAME to reference captured nodes from the search pattern."
+            ),
+            lang: tool.schema.string().optional().describe("Language to parse as"),
+            path: tool.schema.string().optional().describe("File or directory path"),
+          },
+          async execute(args) {
+            return astGrepReplace($, args.pattern, args.replacement, {
+              lang: args.lang,
+              path: args.path,
+            });
+          },
+        }),
+        "council": tool({
+          description:
+            "Consult multiple LLM models in parallel on a question and synthesize " +
+            "their responses. Use for high-stakes architectural decisions, ambiguous " +
+            "problems where model diversity adds value, or when the user explicitly " +
+            "asks for multiple opinions. NOT for routine code review (use review-pipeline instead).",
+          args: {
+            question: tool.schema.string().describe(
+              "The question or decision to present to the council. Be specific about " +
+              "what decision, trade-off, or answer needs to be resolved."
+            ),
+            models: tool.schema.array(tool.schema.string()).optional().describe(
+              "Override councillor models for this invocation (format: 'provider/model', e.g. " +
+              "'anthropic/claude-opus-4-6'). Each string is split on '/' into providerID/modelID. " +
+              "Uses config defaults if omitted."
+            ),
+          },
+          async execute(args, context) {
+            const pluginConfig = await loadOpencodePluginConfig();
+            if (!pluginConfig.council && !args.models) {
+              return "Council is not configured. Add a 'council' section to ~/.config/opencode/tw-plugin.json with 'councillors' (array of {providerID, modelID}), 'synthesizer' (agent name), and 'timeoutMs'. Or pass 'models' to this tool call.";
+            }
+            const baseConfig = pluginConfig.council ?? {
+              councillors: [],
+              synthesizer: "council-synthesizer",
+              timeoutMs: 120000,
+            };
+            const config = args.models
+              ? {
+                  ...baseConfig,
+                  councillors: args.models.map((m: string) => {
+                    const [providerID, ...rest] = m.split("/");
+                    return { providerID, modelID: rest.join("/") };
+                  }),
+                }
+              : baseConfig;
+            const result = await runCouncil(
+              client,
+              context.sessionID,
+              args.question,
+              config,
+            );
+            return result.synthesis;
+          },
+        }),
+      },
 
     config: async (config) => {
       config.command = {

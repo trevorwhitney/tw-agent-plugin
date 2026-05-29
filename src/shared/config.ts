@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
+import type { CouncilConfig } from "../council/types.js";
 
 const DEFAULT_TIMEOUT_MS = 300_000;
 
@@ -88,7 +89,10 @@ export type OpencodeReviewConfig = {
   "spec-review": EnsembleConfig;
   timeoutMs: number;
 };
-export type OpencodePluginConfig = { review: OpencodeReviewConfig };
+export type OpencodePluginConfig = {
+  review: OpencodeReviewConfig;
+  council?: CouncilConfig;
+};
 
 const OPENCODE_DEFAULT_ENSEMBLES: OpencodeReviewConfig = {
   "code-review": { agents: ["code-reviewer", "challenger", "performance-reviewer"] },
@@ -143,7 +147,14 @@ export async function loadOpencodePluginConfig(
     "spec-review": resolveOpencodeEnsemble("spec-review", raw),
     timeoutMs,
   };
-  return { review };
+  const council: CouncilConfig | undefined = raw?.council ? {
+    councillors: raw.council.councillors ?? [],
+    synthesizer: raw.council.synthesizer ?? "council-synthesizer",
+    timeoutMs: typeof raw.council.timeoutMs === "number" && raw.council.timeoutMs > 0
+      ? raw.council.timeoutMs
+      : 120_000,
+  } : undefined;
+  return { review, council };
 }
 
 export async function loadOpencodeReviewConfig(
