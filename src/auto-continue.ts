@@ -8,9 +8,9 @@ import type { PluginInput } from "@opencode-ai/plugin";
 type OpencodeClient = PluginInput["client"];
 
 interface AutoContinueState {
-  enabled: boolean;
+  enabledSessions: Set<string>;
   cooldownMs: number;
-  lastContinueAt: number;
+  lastContinueAt: Map<string, number>;
   sessionContinueCount: Map<string, number>;
   maxContinuesPerSession: number;
   /** Track consecutive low-output turns per session for no-progress detection */
@@ -25,9 +25,9 @@ interface AutoContinueState {
 }
 
 const state: AutoContinueState = {
-  enabled: false,
+  enabledSessions: new Set(),
   cooldownMs: 3000,
-  lastContinueAt: -Infinity,
+  lastContinueAt: new Map(),
   sessionContinueCount: new Map(),
   maxContinuesPerSession: 20,
   stalledTurns: new Map(),
@@ -37,16 +37,15 @@ const state: AutoContinueState = {
   maxPromptFailures: 3,
 };
 
-export function isAutoContinueEnabled(): boolean {
-  return state.enabled;
+export function isAutoContinueEnabled(sessionID: string): boolean {
+  return state.enabledSessions.has(sessionID);
 }
 
-export function setAutoContinue(enabled: boolean): void {
-  state.enabled = enabled;
-  if (!enabled) {
-    state.sessionContinueCount.clear();
-    state.stalledTurns.clear();
-    state.promptFailures.clear();
+export function setAutoContinue(sessionID: string, enabled: boolean): void {
+  if (enabled) {
+    state.enabledSessions.add(sessionID);
+  } else {
+    state.enabledSessions.delete(sessionID);
   }
 }
 
@@ -78,18 +77,19 @@ export async function handleSessionIdle(
   sessionID: string,
   options?: { activeGoal?: string },
 ): Promise<ContinueResult> {
-  if (!state.enabled) return { continued: false, reason: "disabled" };
+  if (!isAutoContinueEnabled(sessionID)) return { continued: false, reason: "disabled" };
 
   // Cooldown check
   const now = Date.now();
-  if (now - state.lastContinueAt < state.cooldownMs) return { continued: false, reason: "cooldown" };
+  const lastContinue = state.lastContinueAt.get(sessionID) ?? -Infinity;
+  if (now - lastContinue < state.cooldownMs) return { continued: false, reason: "cooldown" };
 
-  // Prompt failure check
-  const failures = state.promptFailures.get(sessionID) ?? 0;
-  if (failures >= state.maxPromptFailures) {
-    state.enabled = false;
-    return { continued: false, reason: "prompt-failed" };
-  }
+   // Prompt failure check
+   const failures = state.promptFailures.get(sessionID) ?? 0;
+   if (failures >= state.maxPromptFailures) {
+     state.enabledSessions.delete(sessionID);
+     return { continued: false, reason: "prompt-failed" };
+   }
 
   // No-progress detection: pause if too many consecutive stalled turns
   const stalled = state.stalledTurns.get(sessionID) ?? 0;
@@ -106,7 +106,7 @@ export async function handleSessionIdle(
         },
       });
     } catch { /* best effort */ }
-    state.enabled = false;
+    state.enabledSessions.delete(sessionID);
     state.stalledTurns.set(sessionID, 0);
     return { continued: false, reason: "stalled" };
   }
@@ -125,7 +125,7 @@ export async function handleSessionIdle(
         },
       });
     } catch { /* best effort */ }
-    state.enabled = false;
+    state.enabledSessions.delete(sessionID);
     return { continued: false, reason: "limit" };
   }
 
@@ -141,7 +141,7 @@ export async function handleSessionIdle(
     return { continued: false, reason: "error" };
   }
 
-  state.lastContinueAt = now;
+  state.lastContinueAt.set(sessionID, now);
   state.sessionContinueCount.set(sessionID, count + 1);
 
   const goalReminder = options?.activeGoal
@@ -176,8 +176,8 @@ export function resetSessionContinueCount(sessionID: string): void {
 
 /** @internal For testing only */
 export function __resetInternalState(): void {
-  state.enabled = false;
-  state.lastContinueAt = -Infinity;
+  state.enabledSessions.clear();
+  state.lastContinueAt.clear();
   state.sessionContinueCount.clear();
   state.stalledTurns.clear();
   state.promptFailures.clear();

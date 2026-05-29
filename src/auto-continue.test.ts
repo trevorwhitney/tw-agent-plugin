@@ -42,14 +42,14 @@ describe("auto-continue", () => {
   });
 
   it("defaults to disabled", () => {
-    expect(isAutoContinueEnabled()).toBe(false);
+    expect(isAutoContinueEnabled("session-1")).toBe(false);
   });
 
   it("can be enabled and disabled", () => {
-    setAutoContinue(true);
-    expect(isAutoContinueEnabled()).toBe(true);
-    setAutoContinue(false);
-    expect(isAutoContinueEnabled()).toBe(false);
+    setAutoContinue("session-1", true);
+    expect(isAutoContinueEnabled("session-1")).toBe(true);
+    setAutoContinue("session-1", false);
+    expect(isAutoContinueEnabled("session-1")).toBe(false);
   });
 
   it("does not trigger when disabled", async () => {
@@ -60,7 +60,7 @@ describe("auto-continue", () => {
   });
 
   it("does not trigger when no incomplete todos", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({
       todos: [{ content: "done task", status: "completed", priority: "high" }],
     });
@@ -69,7 +69,7 @@ describe("auto-continue", () => {
   });
 
   it("triggers when enabled and has incomplete todos", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     const result = await handleSessionIdle(client, "session-1");
     expect(result).toEqual({ continued: true });
@@ -84,7 +84,7 @@ describe("auto-continue", () => {
   });
 
   it("includes goal reminder when provided", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     const result = await handleSessionIdle(client, "session-1", { activeGoal: "Fix the auth bug" });
     expect(result).toEqual({ continued: true });
@@ -98,7 +98,7 @@ describe("auto-continue", () => {
   });
 
   it("includes beads check-in in message", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     const result = await handleSessionIdle(client, "session-1");
     expect(result).toEqual({ continued: true });
@@ -112,7 +112,7 @@ describe("auto-continue", () => {
   });
 
   it("sends wrap-up on per-session limit instead of hard stop", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     for (let i = 0; i < 20; i++) {
       await handleSessionIdle(client, "session-1");
@@ -121,7 +121,7 @@ describe("auto-continue", () => {
     }
     const result = await handleSessionIdle(client, "session-1");
     expect(result).toEqual({ continued: false, reason: "limit" });
-    expect(isAutoContinueEnabled()).toBe(false);
+    expect(isAutoContinueEnabled("session-1")).toBe(false);
     // Should have sent wrap-up prompt
     const lastCall = client.session.promptAsync.mock.calls.at(-1)?.[0];
     expect(lastCall?.body?.parts[0].text).toContain("limit reached");
@@ -129,7 +129,7 @@ describe("auto-continue", () => {
   });
 
   it("detects stalled turns and sends wrap-up", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     // Simulate 3 consecutive low-output turns
     recordAssistantOutput("session-1", 50);
@@ -137,7 +137,7 @@ describe("auto-continue", () => {
     recordAssistantOutput("session-1", 10);
     const result = await handleSessionIdle(client, "session-1");
     expect(result).toEqual({ continued: false, reason: "stalled" });
-    expect(isAutoContinueEnabled()).toBe(false);
+    expect(isAutoContinueEnabled("session-1")).toBe(false);
     // Should have sent wrap-up prompt for stalled detection
     expect(client.session.promptAsync).toHaveBeenCalled();
     const lastCall = client.session.promptAsync.mock.calls.at(-1)?.[0];
@@ -145,7 +145,7 @@ describe("auto-continue", () => {
   });
 
   it("resets stalled count on normal output", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     recordAssistantOutput("session-1", 50);
     recordAssistantOutput("session-1", 50);
@@ -161,7 +161,7 @@ describe("auto-continue", () => {
   });
 
   it("tracks prompt failures and disables after max", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos, promptAsyncFail: true });
     await handleSessionIdle(client, "session-1");
     vi.advanceTimersByTime(4000);
@@ -171,11 +171,11 @@ describe("auto-continue", () => {
     vi.advanceTimersByTime(4000);
     const result = await handleSessionIdle(client, "session-1");
     expect(result).toEqual({ continued: false, reason: "prompt-failed" });
-    expect(isAutoContinueEnabled()).toBe(false);
+    expect(isAutoContinueEnabled("session-1")).toBe(false);
   });
 
   it("resets all counters on session reset", async () => {
-    setAutoContinue(true);
+    setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     const firstResult = await handleSessionIdle(client, "session-1");
     expect(firstResult).toEqual({ continued: true });

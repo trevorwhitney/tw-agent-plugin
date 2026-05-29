@@ -4,12 +4,11 @@ import { runReviewPipeline } from "../review/pipeline.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
 import { runCouncil } from "../council/tool.js";
 import { loadOpencodePluginConfig } from "../shared/config.js";
-import type { EventSessionStatus, EventSessionCompacted } from "@opencode-ai/sdk";
+import type { EventSessionStatus, EventSessionCompacted, TextPart } from "@opencode-ai/sdk";
 import {
   setAutoContinue,
   handleSessionIdle,
   resetSessionContinueCount,
-  recordAssistantOutput,
 } from "../auto-continue.js";
 import {
   getGoal,
@@ -161,6 +160,21 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
           }
           if (status.type === "idle") {
             await $`workmux set-window-status done`.quiet().nothrow();
+
+            // Check last assistant message for stall detection and goal markers
+            try {
+              const msgs = await client.session.messages({ path: { id: sessionID }, query: { limit: 5 } });
+              const lastAssistant = msgs.data?.find((m: any) => m.info.role === "assistant");
+              if (lastAssistant) {
+                const textParts = (lastAssistant.parts ?? []).filter((p: any): p is TextPart => p.type === "text");
+                const fullText = textParts.map((p: TextPart) => p.text).join("\n");
+                const marker = scanForGoalMarkers(sessionID, fullText);
+                if (marker === "complete") {
+                  setAutoContinue(sessionID, false);
+                }
+              }
+            } catch { /* best effort */ }
+
             const goal = getGoal(sessionID);
             const result = await handleSessionIdle(client, sessionID, {
               activeGoal: goal?.objective,
@@ -189,27 +203,6 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
         case "global.disposed":
           await $`workmux set-window-status clear`.quiet().nothrow();
           break;
-        case "message.updated": {
-          const msgProps = event.properties as {
-            sessionID?: string;
-            role?: string;
-            parts?: Array<{ type: string; text?: string }>;
-          } | undefined;
-          if (msgProps?.role === "assistant" && msgProps?.sessionID) {
-            const textParts = (msgProps.parts ?? []).filter((p) => p.type === "text");
-            const fullText = textParts.map((p) => p.text ?? "").join("\n");
-
-            // No-progress detection
-            recordAssistantOutput(msgProps.sessionID, fullText.length);
-
-            // Goal marker scanning
-            const marker = scanForGoalMarkers(msgProps.sessionID, fullText);
-            if (marker === "complete") {
-              setAutoContinue(false);
-            }
-          }
-          break;
-        }
         case "session.compacted":
           await beads.handleCompactionEvent(event as EventSessionCompacted);
           break;
@@ -225,129 +218,135 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
         args: {
           enabled: tool.schema.boolean().describe("Whether to enable auto-continue"),
         },
-        async execute(args) {
-          setAutoContinue(args.enabled);
+        async execute(args, context) {
+          setAutoContinue(context.sessionID, args.enabled);
           return `Auto-continue ${args.enabled ? "enabled" : "disabled"}.`;
         },
       }),
-       "review-pipeline": tool({
-         description:
-           "Run a multi-reviewer pipeline. Configured agents independently review the target, " +
-           "then cross-examine each other's findings. Returns all review rounds for synthesis. " +
-           "Use this tool when the user runs /code-review, /plan-review, or /spec-review.",
-         args: {
-           type: tool.schema.enum(["code-review", "plan-review", "spec-review"]),
-           target: tool.schema.string().describe(
-             "The review target — a PR URL, file paths, commit range, spec content, or description of what to review"
-           ),
-         },
-         async execute(args, context) {
-           const prompts =
-             args.type === "code-review"
-               ? codeReviewPrompts
-               : args.type === "plan-review"
-                 ? planReviewPrompts
-                 : specReviewPrompts;
-           const config = await loadOpencodeReviewConfig();
-           const ensemble = config[args.type];
-           const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
+      "review-pipeline": tool({
+        description:
+          "Run a multi-reviewer pipeline. Configured agents independently review the target, " +
+          "then cross-examine each other's findings. Returns all review rounds for synthesis. " +
+          "Use this tool when the user runs /code-review, /plan-review, or /spec-review.",
+        args: {
+          type: tool.schema.enum(["code-review", "plan-review", "spec-review"]),
+          target: tool.schema.string().describe(
+            "The review target — a PR URL, file paths, commit range, spec content, or description of what to review"
+          ),
+        },
+        async execute(args, context) {
+          const prompts =
+            args.type === "code-review"
+              ? codeReviewPrompts
+              : args.type === "plan-review"
+                ? planReviewPrompts
+                : specReviewPrompts;
+          const config = await loadOpencodeReviewConfig();
+          const ensemble = config[args.type];
+          const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
 
-           const runner = createOpencodeRunner(client, context.sessionID);
-           const synthesisText = await runReviewPipeline(
-             runner,
-             args.target,
-             prompts,
-             pipelineConfig,
-           );
+          const runner = createOpencodeRunner(client, context.sessionID);
+          const synthesisText = await runReviewPipeline(
+            runner,
+            args.target,
+            prompts,
+            pipelineConfig,
+          );
 
-           return synthesisText;
-         },
-       }),
-       "ast-grep-search": tool({
-         description:
-           "Search code using AST structural patterns (ast-grep). More reliable than " +
-           "regex for finding code patterns like function calls, class definitions, " +
-           "or specific code structures. Requires 'sg' CLI (brew install ast-grep).",
-         args: {
-           pattern: tool.schema.string().describe(
-             "AST pattern to search for. Examples: 'console.log($$$)', " +
-             "'function $FUNC($$$) { $$$ }', 'if ($COND) { $$$ }'"
-           ),
-           lang: tool.schema.string().optional().describe(
-             "Language to parse as (e.g., 'typescript', 'python', 'go'). Auto-detected if omitted."
-           ),
-           path: tool.schema.string().optional().describe(
-             "File or directory path to search in. Defaults to current directory."
-           ),
-         },
-         async execute(args) {
-           return astGrepSearch($, args.pattern, { lang: args.lang, path: args.path });
-         },
-       }),
-        "ast-grep-replace": tool({
-          description:
-            "Replace code using AST structural patterns (ast-grep). Safer than regex-based " +
-            "find-and-replace because it understands code structure. Requires 'sg' CLI.",
-          args: {
-            pattern: tool.schema.string().describe("AST pattern to match"),
-            replacement: tool.schema.string().describe(
-              "Replacement pattern. Use $VARNAME to reference captured nodes from the search pattern."
-            ),
-            lang: tool.schema.string().optional().describe("Language to parse as"),
-            path: tool.schema.string().optional().describe("File or directory path"),
-          },
-          async execute(args) {
-            return astGrepReplace($, args.pattern, args.replacement, {
-              lang: args.lang,
-              path: args.path,
-            });
-          },
-        }),
-        "council": tool({
-          description:
-            "Consult multiple LLM models in parallel on a question and synthesize " +
-            "their responses. Use for high-stakes architectural decisions, ambiguous " +
-            "problems where model diversity adds value, or when the user explicitly " +
-            "asks for multiple opinions. NOT for routine code review (use review-pipeline instead).",
-          args: {
-            question: tool.schema.string().describe(
-              "The question or decision to present to the council. Be specific about " +
-              "what decision, trade-off, or answer needs to be resolved."
-            ),
-            models: tool.schema.array(tool.schema.string()).optional().describe(
-              "Override councillor models for this invocation (format: 'provider/model', e.g. " +
-              "'anthropic/claude-opus-4-6'). Each string is split on '/' into providerID/modelID. " +
-              "Uses config defaults if omitted."
-            ),
-          },
-          async execute(args, context) {
-            const pluginConfig = await loadOpencodePluginConfig();
-            if (!pluginConfig.council && !args.models) {
-              return "Council is not configured. Add a 'council' section to ~/.config/opencode/tw-plugin.json with 'councillors' (array of {providerID, modelID}), 'synthesizer' (agent name), and 'timeoutMs'. Or pass 'models' to this tool call.";
+          return synthesisText;
+        },
+      }),
+      "ast-grep-search": tool({
+        description:
+          "Search code using AST structural patterns (ast-grep). More reliable than " +
+          "regex for finding code patterns like function calls, class definitions, " +
+          "or specific code structures. Requires 'sg' CLI (brew install ast-grep).",
+        args: {
+          pattern: tool.schema.string().describe(
+            "AST pattern to search for. Examples: 'console.log($$$)', " +
+            "'function $FUNC($$$) { $$$ }', 'if ($COND) { $$$ }'"
+          ),
+          lang: tool.schema.string().optional().describe(
+            "Language to parse as (e.g., 'typescript', 'python', 'go'). Auto-detected if omitted."
+          ),
+          path: tool.schema.string().optional().describe(
+            "File or directory path to search in. Defaults to current directory."
+          ),
+        },
+        async execute(args) {
+          return astGrepSearch($, args.pattern, { lang: args.lang, path: args.path });
+        },
+      }),
+      "ast-grep-replace": tool({
+        description:
+          "Replace code using AST structural patterns (ast-grep). Safer than regex-based " +
+          "find-and-replace because it understands code structure. Requires 'sg' CLI.",
+        args: {
+          pattern: tool.schema.string().describe("AST pattern to match"),
+          replacement: tool.schema.string().describe(
+            "Replacement pattern. Use $VARNAME to reference captured nodes from the search pattern."
+          ),
+          lang: tool.schema.string().optional().describe("Language to parse as"),
+          path: tool.schema.string().optional().describe("File or directory path"),
+        },
+        async execute(args) {
+          return astGrepReplace($, args.pattern, args.replacement, {
+            lang: args.lang,
+            path: args.path,
+          });
+        },
+      }),
+      "council": tool({
+        description:
+          "Consult multiple LLM models in parallel on a question and synthesize " +
+          "their responses. Use for high-stakes architectural decisions, ambiguous " +
+          "problems where model diversity adds value, or when the user explicitly " +
+          "asks for multiple opinions. NOT for routine code review (use review-pipeline instead).",
+        args: {
+          question: tool.schema.string().describe(
+            "The question or decision to present to the council. Be specific about " +
+            "what decision, trade-off, or answer needs to be resolved."
+          ),
+          models: tool.schema.array(tool.schema.string()).optional().describe(
+            "Override councillor models for this invocation (format: 'provider/model', e.g. " +
+            "'anthropic/claude-opus-4-6'). Each string is split on '/' into providerID/modelID. " +
+            "Uses config defaults if omitted."
+          ),
+        },
+        async execute(args, context) {
+          const pluginConfig = await loadOpencodePluginConfig();
+          if (!pluginConfig.council && !args.models) {
+            return "Council is not configured. Add a 'council' section to ~/.config/opencode/tw-plugin.json with 'councillors' (array of {providerID, modelID}), 'synthesizer' (agent name), and 'timeoutMs'. Or pass 'models' to this tool call.";
+          }
+          const baseConfig = pluginConfig.council ?? {
+            councillors: [],
+            synthesizer: "council-synthesizer",
+            timeoutMs: 120000,
+          };
+          if (args.models) {
+            const invalid = args.models.filter((m: string) => !m.includes("/") || m.startsWith("/") || m.endsWith("/"));
+            if (invalid.length) {
+              return `Invalid model format (expected 'provider/model'): ${invalid.join(", ")}`;
             }
-            const baseConfig = pluginConfig.council ?? {
-              councillors: [],
-              synthesizer: "council-synthesizer",
-              timeoutMs: 120000,
-            };
-            const config = args.models
-              ? {
-                  ...baseConfig,
-                  councillors: args.models.map((m: string) => {
-                    const [providerID, ...rest] = m.split("/");
-                    return { providerID, modelID: rest.join("/") };
-                  }),
-                }
-              : baseConfig;
-            const result = await runCouncil(
-              client,
-              context.sessionID,
-              args.question,
-              config,
-            );
-            return result.synthesis;
-          },
-        }),
+          }
+          const config = args.models
+            ? {
+                ...baseConfig,
+                councillors: args.models.map((m: string) => {
+                  const [providerID, ...rest] = m.split("/");
+                  return { providerID, modelID: rest.join("/") };
+                }),
+              }
+            : baseConfig;
+          const result = await runCouncil(
+            client,
+            context.sessionID,
+            args.question,
+            config,
+          );
+          return result.synthesis;
+        },
+      }),
       },
 
     config: async (config) => {

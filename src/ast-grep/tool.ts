@@ -46,9 +46,9 @@ export async function astGrepReplace(
     let result;
 
     if (options.lang) {
-      result = await $`sg run --pattern ${pattern} --rewrite ${replacement} --update-all --lang ${options.lang} ${target}`.nothrow().text();
+      result = await $`sg run --pattern ${pattern} --rewrite ${replacement} --update-all --lang ${options.lang} ${target}`.text();
     } else {
-      result = await $`sg run --pattern ${pattern} --rewrite ${replacement} --update-all ${target}`.nothrow().text();
+      result = await $`sg run --pattern ${pattern} --rewrite ${replacement} --update-all ${target}`.text();
     }
 
     return result || "Replacement applied.";
