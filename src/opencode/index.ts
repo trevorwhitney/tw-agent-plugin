@@ -2,7 +2,13 @@ import { type Plugin, tool } from "@opencode-ai/plugin";
 import { loadOpencodeReviewConfig } from "../review/config.js";
 import { runReviewPipeline } from "../review/pipeline.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
-import type { EventSessionCompacted } from "@opencode-ai/sdk";
+import type { EventSessionStatus, EventSessionCompacted } from "@opencode-ai/sdk";
+import {
+  setAutoContinue,
+  handleSessionIdle,
+  resetSessionContinueCount,
+  recordAssistantOutput,
+} from "../auto-continue.js";
 import {
   loadCommands,
   loadAgent,
@@ -72,14 +78,17 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
       const type = event.type as string;
       switch (type) {
         case "session.status": {
-          const props = event.properties as
-            | { status?: { type?: string } }
-            | undefined;
-          if (props?.status?.type === "busy") {
+          const statusEvent = event as EventSessionStatus;
+          const { sessionID, status } = statusEvent.properties;
+          if (status.type === "busy") {
             await $`workmux set-window-status working`.quiet().nothrow();
           }
-          if (props?.status?.type === "idle") {
+          if (status.type === "idle") {
             await $`workmux set-window-status done`.quiet().nothrow();
+            const result = await handleSessionIdle(client, sessionID);
+            if (result.continued) {
+              await $`workmux set-window-status working`.quiet().nothrow();
+            }
           }
           break;
         }
@@ -90,10 +99,31 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
         case "session.idle":
           await $`workmux set-window-status done`.quiet().nothrow();
           break;
-        case "session.created":
+        case "session.created": {
+          const createdProps = event.properties as { id?: string } | undefined;
+          if (createdProps?.id) {
+            resetSessionContinueCount(createdProps.id);
+          }
+          await $`workmux set-window-status clear`.quiet().nothrow();
+          break;
+        }
         case "global.disposed":
           await $`workmux set-window-status clear`.quiet().nothrow();
           break;
+        case "message.updated": {
+          const msgProps = event.properties as {
+            sessionID?: string;
+            role?: string;
+            parts?: Array<{ type: string; text?: string }>;
+          } | undefined;
+          if (msgProps?.role === "assistant" && msgProps?.sessionID) {
+            const totalChars = (msgProps.parts ?? [])
+              .filter((p) => p.type === "text")
+              .reduce((sum, p) => sum + (p.text?.length ?? 0), 0);
+            recordAssistantOutput(msgProps.sessionID, totalChars);
+          }
+          break;
+        }
         case "session.compacted":
           await beads.handleCompactionEvent(event as EventSessionCompacted);
           break;
@@ -101,6 +131,19 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     },
 
     tool: {
+      "auto-continue": tool({
+        description:
+          "Enable or disable todo auto-continuation. When enabled, the agent " +
+          "automatically resumes when there are incomplete todos after going idle. " +
+          "Enable when working through multi-step plans. Disable for interactive work.",
+        args: {
+          enabled: tool.schema.boolean().describe("Whether to enable auto-continue"),
+        },
+        async execute(args) {
+          setAutoContinue(args.enabled);
+          return `Auto-continue ${args.enabled ? "enabled" : "disabled"}.`;
+        },
+      }),
       "review-pipeline": tool({
         description:
           "Run a multi-reviewer pipeline. Configured agents independently review the target, " +
