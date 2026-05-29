@@ -3,27 +3,14 @@
 // writes specs and plans to Obsidian and symlinks them back into the repo.
 // ---------------------------------------------------------------------------
 export const OBSIDIAN_DOCS_RULES = `<obsidian-docs-rules>
-## Spec & Plan Storage Rules
+## Spec & Plan Storage
 
-These rules govern where specs and plans are written. Follow them unconditionally.
+When creating specs or plans (\`.md\` files from brainstorming, writing-plans, etc.):
 
-### Write specs and plans to Obsidian
-
-When creating specs or plans (via brainstorming, writing-plans skills, or any workflow that produces \`.md\` spec/plan files):
-
-1. **Write the file to the Obsidian vault first:**
+1. Write to Obsidian vault first:
    - Specs: \`/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/specs/<filename>\`
    - Plans: \`/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/plans/<filename>\`
-
-2. **Then symlink the file back into the repo:**
-   \`\`\`bash
-   mkdir -p docs/superpowers/specs docs/superpowers/plans
-   # For specs:
-   ln -sf "/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/specs/<filename>" "docs/superpowers/specs/<filename>"
-   # For plans:
-   ln -sf "/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/plans/<filename>" "docs/superpowers/plans/<filename>"
-   \`\`\`
-
-3. **Never write specs or plans directly into \`docs/superpowers/\`** — always write to Obsidian and symlink.
+2. Symlink back: \`ln -sf "<obsidian-path>" "docs/superpowers/{specs,plans}/<filename>"\`
+3. Never write directly to \`docs/superpowers/\` — always Obsidian + symlink.
 
 </obsidian-docs-rules>`;

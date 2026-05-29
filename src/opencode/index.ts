@@ -15,6 +15,14 @@ import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 
+// Pre-build a single combined rules block so we only prepend one text part.
+const COMBINED_RULES = [
+  TOOL_PRIORITY_RULES,
+  OBSIDIAN_DOCS_RULES,
+  GIT_COMMIT_RULES,
+  BEADS_AWARENESS,
+].join("\n");
+
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
   const [beadsCommands, beadsAgents, workmuxCommands] = await Promise.all([
     loadCommands(),
@@ -24,13 +32,34 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
   const beads = createBeadsContextManager(client, $);
 
   return {
-    // Inject tool priority rules into every system prompt so the model
-    // always knows to prefer CLI tools without needing to load a skill.
-    "experimental.chat.system.transform": async (_input, output) => {
-      (output.system ||= []).push(TOOL_PRIORITY_RULES);
-      output.system.push(OBSIDIAN_DOCS_RULES);
-      output.system.push(GIT_COMMIT_RULES);
-      output.system.push(BEADS_AWARENESS);
+    // Inject rules into the first user message of each session rather than
+    // as system messages on every step.  This matches the approach used by
+    // superpowers.js and avoids per-step system-message token bloat.
+    "experimental.chat.messages.transform": async (_input, output) => {
+      if (!output.messages.length) return;
+      const firstUser = output.messages.find(
+        (m: { info: { role: string } }) => m.info.role === "user",
+      );
+      if (!firstUser?.parts?.length) return;
+
+      // Guard: skip if already injected (hook fires on every step because
+      // opencode reloads messages from DB each time).
+      if (
+        firstUser.parts.some(
+          (p: { type: string; text?: string }) =>
+            p.type === "text" && p.text?.includes("<tool-priority-rules>"),
+        )
+      )
+        return;
+
+      const ref = firstUser.parts[0];
+      firstUser.parts.unshift({
+        id: ref.id,
+        sessionID: ref.sessionID,
+        messageID: ref.messageID,
+        type: "text",
+        text: COMBINED_RULES,
+      });
     },
 
     "chat.message": async (_input, output) => {
