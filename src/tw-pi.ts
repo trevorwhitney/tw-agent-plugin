@@ -4,6 +4,7 @@ import { Type, StringEnum } from "@earendil-works/pi-ai";
 import { TOOL_PRIORITY_RULES } from "./tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "./obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "./git-commit-rules.js";
+import { ORCHESTRATION_RULES } from "./orchestration-rules.js";
 import { loadPiReviewConfig } from "./review/config.js";
 import { runReviewPipeline } from "./review/pipeline.js";
 import {
@@ -85,7 +86,7 @@ export default function(pi: ExtensionAPI) {
     // Capture discovered skills so the skill tool can resolve by name
     discoveredSkills = event.systemPromptOptions.skills ?? [];
 
-    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + OBSIDIAN_DOCS_RULES + "\n\n" + GIT_COMMIT_RULES + "\n\n" + BEADS_AWARENESS;
+    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + OBSIDIAN_DOCS_RULES + "\n\n" + GIT_COMMIT_RULES + "\n\n" + BEADS_AWARENESS + "\n\n" + ORCHESTRATION_RULES;
     const bootstrap = await getSuperpowersBootstrap();
     if (bootstrap) {
       extraSystemPrompt += "\n\n" + bootstrap;

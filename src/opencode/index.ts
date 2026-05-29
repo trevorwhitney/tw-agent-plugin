@@ -13,6 +13,7 @@ import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
+import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
@@ -21,6 +22,7 @@ const COMBINED_RULES = [
   OBSIDIAN_DOCS_RULES,
   GIT_COMMIT_RULES,
   BEADS_AWARENESS,
+  ORCHESTRATION_RULES,
 ].join("\n");
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
