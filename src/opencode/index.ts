@@ -32,6 +32,7 @@ import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
 import { createOpencodeRunner } from "./runner.js";
+import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
 const COMBINED_RULES = [
@@ -227,40 +228,80 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
           return `Auto-continue ${args.enabled ? "enabled" : "disabled"}.`;
         },
       }),
-      "review-pipeline": tool({
-        description:
-          "Run a multi-reviewer pipeline. Configured agents independently review the target, " +
-          "then cross-examine each other's findings. Returns all review rounds for synthesis. " +
-          "Use this tool when the user runs /code-review, /plan-review, or /spec-review.",
-        args: {
-          type: tool.schema.enum(["code-review", "plan-review", "spec-review"]),
-          target: tool.schema.string().describe(
-            "The review target — a PR URL, file paths, commit range, spec content, or description of what to review"
-          ),
-        },
-        async execute(args, context) {
-          const prompts =
-            args.type === "code-review"
-              ? codeReviewPrompts
-              : args.type === "plan-review"
-                ? planReviewPrompts
-                : specReviewPrompts;
-          const config = await loadOpencodeReviewConfig();
-          const ensemble = config[args.type];
-          const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
+       "review-pipeline": tool({
+         description:
+           "Run a multi-reviewer pipeline. Configured agents independently review the target, " +
+           "then cross-examine each other's findings. Returns all review rounds for synthesis. " +
+           "Use this tool when the user runs /code-review, /plan-review, or /spec-review.",
+         args: {
+           type: tool.schema.enum(["code-review", "plan-review", "spec-review"]),
+           target: tool.schema.string().describe(
+             "The review target — a PR URL, file paths, commit range, spec content, or description of what to review"
+           ),
+         },
+         async execute(args, context) {
+           const prompts =
+             args.type === "code-review"
+               ? codeReviewPrompts
+               : args.type === "plan-review"
+                 ? planReviewPrompts
+                 : specReviewPrompts;
+           const config = await loadOpencodeReviewConfig();
+           const ensemble = config[args.type];
+           const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
 
-          const runner = createOpencodeRunner(client, context.sessionID);
-          const synthesisText = await runReviewPipeline(
-            runner,
-            args.target,
-            prompts,
-            pipelineConfig,
-          );
+           const runner = createOpencodeRunner(client, context.sessionID);
+           const synthesisText = await runReviewPipeline(
+             runner,
+             args.target,
+             prompts,
+             pipelineConfig,
+           );
 
-          return synthesisText;
-        },
-      }),
-    },
+           return synthesisText;
+         },
+       }),
+       "ast-grep-search": tool({
+         description:
+           "Search code using AST structural patterns (ast-grep). More reliable than " +
+           "regex for finding code patterns like function calls, class definitions, " +
+           "or specific code structures. Requires 'sg' CLI (brew install ast-grep).",
+         args: {
+           pattern: tool.schema.string().describe(
+             "AST pattern to search for. Examples: 'console.log($$$)', " +
+             "'function $FUNC($$$) { $$$ }', 'if ($COND) { $$$ }'"
+           ),
+           lang: tool.schema.string().optional().describe(
+             "Language to parse as (e.g., 'typescript', 'python', 'go'). Auto-detected if omitted."
+           ),
+           path: tool.schema.string().optional().describe(
+             "File or directory path to search in. Defaults to current directory."
+           ),
+         },
+         async execute(args) {
+           return astGrepSearch($, args.pattern, { lang: args.lang, path: args.path });
+         },
+       }),
+       "ast-grep-replace": tool({
+         description:
+           "Replace code using AST structural patterns (ast-grep). Safer than regex-based " +
+           "find-and-replace because it understands code structure. Requires 'sg' CLI.",
+         args: {
+           pattern: tool.schema.string().describe("AST pattern to match"),
+           replacement: tool.schema.string().describe(
+             "Replacement pattern. Use $VARNAME to reference captured nodes from the search pattern."
+           ),
+           lang: tool.schema.string().optional().describe("Language to parse as"),
+           path: tool.schema.string().optional().describe("File or directory path"),
+         },
+         async execute(args) {
+           return astGrepReplace($, args.pattern, args.replacement, {
+             lang: args.lang,
+             path: args.path,
+           });
+         },
+       }),
+     },
 
     config: async (config) => {
       config.command = {
