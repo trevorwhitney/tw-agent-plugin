@@ -24,7 +24,7 @@ This repo is a plugin for **pi** and **opencode**. When the user says "update th
 Persistent instructions are defined as exported string constants in `src/`, then injected at session start by both plugins:
 
 - **Pi** (`src/tw-pi.ts`): injected in the `before_agent_start` handler via `extraSystemPrompt`
-- **OpenCode** (`src/opencode/index.ts`): injected in `experimental.chat.system.transform`
+- **OpenCode** (`src/opencode/index.ts`): injected by prepending the combined rules text to the first user message in `experimental.chat.messages.transform` (via the `COMBINED_RULES` array)
 
 ## Adding a new instruction
 
@@ -34,7 +34,7 @@ Persistent instructions are defined as exported string constants in `src/`, then
    ```
 2. Import and append it in **both**:
    - `src/tw-pi.ts` — add to `extraSystemPrompt`
-   - `src/opencode/index.ts` — add `output.system.push(MY_RULES)` in the transform hook
+   - `src/opencode/index.ts` — add `MY_RULES` to the `COMBINED_RULES` array
 3. Run `npm run build` to verify.
 
 ## Existing instruction modules
@@ -42,5 +42,7 @@ Persistent instructions are defined as exported string constants in `src/`, then
 - `src/tool-priority-rules.ts` — prefer CLI tools (gh) and built-in `gcx_*` tools over MCP equivalents
 - `src/obsidian-docs-rules.ts` — write specs/plans to Obsidian vault and symlink back
 - `src/git-commit-rules.ts` — always sign commits; stop and raise to user if signing fails
+- `src/comment-rules.ts` — write sparse, caller-focused comments; no plan/process narration
+- `src/orchestration-rules.ts` — evaluate delegation/parallelism before multi-step work
 
 Do **not** add persistent instructions to `CLAUDE.md` — that file is Claude Code–specific and not used by pi or opencode.
