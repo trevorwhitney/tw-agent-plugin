@@ -31,6 +31,7 @@ import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
+import { COMMENT_RULES } from "../comment-rules.js";
 import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
@@ -41,6 +42,7 @@ const COMBINED_RULES = [
   TOOL_PRIORITY_RULES,
   OBSIDIAN_DOCS_RULES,
   GIT_COMMIT_RULES,
+  COMMENT_RULES,
   BEADS_AWARENESS,
   ORCHESTRATION_RULES,
 ].join("\n");
