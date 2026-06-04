@@ -39,7 +39,7 @@ Persistent instructions are defined as exported string constants in `src/`, then
 
 ## Existing instruction modules
 
-- `src/tool-priority-rules.ts` — prefer CLI tools (gh, gcx, grafana-assistant) over MCP equivalents
+- `src/tool-priority-rules.ts` — prefer CLI tools (gh) and built-in `gcx_*` tools over MCP equivalents
 - `src/obsidian-docs-rules.ts` — write specs/plans to Obsidian vault and symlink back
 - `src/git-commit-rules.ts` — always sign commits; stop and raise to user if signing fails
 

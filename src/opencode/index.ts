@@ -34,6 +34,7 @@ import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
+import { createGcxTools } from "../grafana/gcx-tools.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
 const COMBINED_RULES = [
@@ -210,6 +211,8 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     },
 
     tool: {
+      // gcx_* tools — Grafana Cloud resource management via the gcx CLI.
+      ...createGcxTools($),
       "auto-continue": tool({
         description:
           "Enable or disable todo auto-continuation. When enabled, the agent " +

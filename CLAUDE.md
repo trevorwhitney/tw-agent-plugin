@@ -24,37 +24,26 @@ Common operations — use these instead of MCP tools:
 - `gh issue create` instead of `github_create_issue`
 - `gh api <endpoint>` for any REST/GraphQL call not covered above
 
-## Grafana: prefer `grafana-assistant` CLI over Grafana MCP tools
+## Grafana / Grafana Cloud: prefer the built-in `gcx_*` tools over Grafana MCP tools and raw API calls
 
-When querying Grafana for metrics, logs, traces, alerts, or dashboards:
+When querying Grafana or managing Grafana Cloud resources (metrics, logs, traces, alerts, dashboards, SLOs, synthetic checks, datasources, resources-as-code):
 
-1. **Always try `grafana-assistant` CLI via the Bash tool first.**
-2. Only fall back to Grafana MCP tools (`mcp-grafana_*`) when:
-   - `grafana-assistant` fails or returns an error
-   - You need an MCP-only operation (creating/updating dashboards, alert rules, or incidents)
-   - The user explicitly asks you to use a specific MCP tool
-
-## Grafana Cloud resources: prefer `gcx` CLI over Grafana MCP tools and raw API calls
-
-When managing Grafana Cloud resources (dashboards, SLOs, alerts, synthetic checks, datasources, oncall, k6, fleet, adaptive telemetry):
-
-1. **Always use the `gcx` CLI via the Bash tool first.**
-2. Run `gcx help-tree` to discover available commands before attempting any operation.
-3. Prefer dedicated `gcx` subcommands over `gcx api` (raw API passthrough).
-4. Only fall back to Grafana MCP tools when:
-   - `gcx` does not support the operation
+1. **Always use the built-in `gcx_*` tools first.**
+2. Use `gcx_help_tree` to discover available capabilities before attempting an unfamiliar operation.
+3. For private/local datasources, open a tunnel first with `gcx_tunnel_connect`.
+4. Only fall back to Grafana MCP tools (`mcp-grafana_*`) when:
+   - The `gcx_*` tools do not support the operation
    - The user explicitly asks you to use a specific MCP tool
 
 Common operations — use these instead of MCP tools or raw API calls:
-- `gcx resources pull/push` for dashboard sync
-- `gcx slo definitions` for SLO lifecycle management
-- `gcx synth checks` for synthetic monitoring CRUD and status
-- `gcx alert rules list` for alert investigation
-- `gcx metrics query` / `gcx logs query` for datasource queries
-- `gcx datasources list` for datasource discovery
-- `gcx dev scaffold/generate/import` for dashboard-as-code workflows
-- `gcx oncall` for on-call schedules and escalation
-- `gcx k6` for load testing
+- `gcx_resources_pull` / `gcx_resources_push` for dashboard sync
+- `gcx_slo_*` for SLO lifecycle management and status
+- `gcx_synth_checks_*` for synthetic monitoring CRUD and status
+- `gcx_alert_rules_list` for alert investigation
+- `gcx_metrics_query` / `gcx_logs_query` for datasource queries
+- `gcx_datasources_list` for datasource discovery
+- `gcx_dev_scaffold` / `gcx_dev_generate` / `gcx_dev_import` for dashboard-as-code workflows
+- `gcx_tunnel_connect` to reach private/local datasources
 
 # Worktrees
 

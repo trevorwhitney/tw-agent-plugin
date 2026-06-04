@@ -14,6 +14,7 @@ import {
 } from "./review/prompts/index.js";
 import { createPiRunner } from "./pi/runner.js";
 import { getSuperpowersBootstrap } from "./pi/superpowers-bootstrap.js";
+import { registerGcxTools } from "./grafana/gcx-pi.js";
 import { BEADS_AWARENESS } from "./beads/index.js";
 import { BEADS_GUIDANCE, loadCommands as loadBeadsCommands } from "./beads/vendor.js";
 import { loadCommands as loadWorkmuxCommands } from "./workmux/index.js";
@@ -294,4 +295,7 @@ export default function(pi: ExtensionAPI) {
       }
     },
   });
+
+  // ── Register the gcx_* Grafana tools ──────────────────────────────────
+  registerGcxTools(pi);
 }
