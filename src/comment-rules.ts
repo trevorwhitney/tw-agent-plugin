@@ -14,4 +14,5 @@ Write comments the way an experienced engineer did before AI: sparse, precise, h
 **Comments describe what code does and its contract — never why it was built this way.** No design rationale, no "chosen over X", no spec/plan/task references, no recap of discussion. Test: if a comment would become false or pointless after a pure refactor (same behavior, different implementation), it is describing or justifying the implementation — cut it or reduce it to the contract.
 
 Default to fewer comments, and keep each as short as clarity allows. Most code is self-explanatory through naming and structure — comment the exceptions, never use a sentence where a phrase will do.
+
 </comment-rules>`;
