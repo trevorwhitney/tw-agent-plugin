@@ -9,6 +9,29 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Turn the SDK's `{ data, error }` envelope into a readable message. With
+ * ThrowOnError disabled (the default), failed requests resolve with
+ * `data: undefined` and an `error` payload rather than throwing, so callers
+ * must inspect `error` explicitly.
+ */
+function describeEnvelopeError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const data = (error as { data?: unknown }).data;
+    if (data && typeof data === "object" && typeof (data as { message?: unknown }).message === "string") {
+      return (data as { message: string }).message;
+    }
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+  return String(error);
+}
+
 export function createOpencodeRunner(
   client: OpencodeClient,
   parentID: string,
@@ -25,7 +48,10 @@ export function createOpencodeRunner(
         const session = await client.session.create({
           body: { parentID, title },
         });
-        sessionId = session.data!.id;
+        if (session.error || !session.data) {
+          throw new Error(`session.create failed: ${describeEnvelopeError(session.error)}`);
+        }
+        sessionId = session.data.id;
         const result = await client.session.prompt({
           path: { id: sessionId },
           body: {
@@ -34,7 +60,10 @@ export function createOpencodeRunner(
           },
           signal: AbortSignal.timeout(timeoutMs),
         });
-        const text = result.data!.parts
+        if (result.error || !result.data) {
+          throw new Error(`session.prompt failed: ${describeEnvelopeError(result.error)}`);
+        }
+        const text = result.data.parts
           .filter((p): p is TextPart => p.type === "text")
           .map((p) => p.text)
           .join("\n");

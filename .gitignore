@@ -4,6 +4,12 @@ dist/
 !vendor/*.tgz
 .DS_Store
 
+# Yarn (Berry) — commit .yarnrc.yml and yarn.lock; ignore the local cache
+# and install state. Yarn itself is provisioned via corepack from the
+# "packageManager" field in package.json (no vendored release).
+.yarn/*
+.pnp.*
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db

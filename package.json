@@ -34,7 +34,7 @@
     "plugin"
   ],
   "dependencies": {
-    "@opencode-ai/plugin": "^1.2.16"
+    "@opencode-ai/plugin": "^1.16.2"
   },
   "devDependencies": {
     "@earendil-works/pi-ai": "^0.75.3",
@@ -43,5 +43,6 @@
     "husky": "^9.1.7",
     "typescript": "^5.8.2",
     "vitest": "^4.0.18"
-  }
+  },
+  "packageManager": "yarn@4.15.0"
 }

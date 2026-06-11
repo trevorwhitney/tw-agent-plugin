@@ -31,13 +31,33 @@ tw-plugin/
 
 ## Installation
 
+### Prerequisites
+
+This project uses **Yarn 4** (Berry), pinned via the `packageManager` field in
+`package.json` and provisioned through [corepack](https://github.com/nodejs/corepack).
+Enable it once:
+
+```bash
+corepack enable
+```
+
+If `corepack enable` fails with an `EPERM` symlink error — common when Node is
+installed read-only (e.g. via Nix) — install/activate the pinned Yarn directly
+instead:
+
+```bash
+corepack prepare yarn@4.15.0 --activate
+```
+
+After that, `yarn` in this repo resolves to 4.15.0 automatically.
+
 ### OpenCode
 
 #### 1. Install dependencies and build
 
 ```bash
-npm install
-npm run build
+yarn install
+yarn build
 ```
 
 #### 2. Restart OpenCode
@@ -57,7 +77,7 @@ claude --plugin-dir /path/to/tw-plugin
 **Persistent install** — run the deploy script, which registers the plugin in `~/.claude/plugins/installed_plugins.json` and enables it in `~/.claude/settings.json`:
 
 ```bash
-npm run deploy
+yarn deploy
 # or
 bash scripts/deploy.sh
 ```
@@ -75,9 +95,9 @@ The deploy script also installs into `~/.pi/agent/`:
 - The bundled `subagent` example extension is also installed so Pi can dispatch subagents
 
 ```bash
-npm install
-npm run build
-npm run deploy
+yarn install
+yarn build
+yarn deploy
 ```
 
 Then restart Pi to pick up the changes.
@@ -139,7 +159,7 @@ export default (async (_ctx) => {
 }) satisfies Plugin;
 ```
 
-Then rebuild: `npm run build`.
+Then rebuild: `yarn build`.
 
 For Pi, custom tools are registered through the `ExtensionAPI` in `src/tw-pi.ts` — see the existing review pipeline registration there for a working example.
 
@@ -256,13 +276,14 @@ Fallbacks (in order) when a per-type entry is missing:
 | `review.agents`             | `string[]` | Optional flat fallback for all types     |
 | `review.timeoutMs`          | `number`   | Per-agent timeout in milliseconds (5 min default) |
 
-Adding a new persona: drop a new `<name>.md` file in `pi-agents/` with `name`, `description`, `model`, and (optionally) `tools` frontmatter, run `npm run deploy`, then reference it by name in the config.
+Adding a new persona: drop a new `<name>.md` file in `pi-agents/` with `name`, `description`, `model`, and (optionally) `tools` frontmatter, run `yarn deploy`, then reference it by name in the config.
 
 ## Useful commands
 
 ```bash
-npm run build      # Compile TypeScript
-npm run dev        # Watch mode
-npm run typecheck  # Type-check without emitting
-npm run deploy     # Deploy to OpenCode, Claude Code, and Pi configs
+yarn build      # Compile TypeScript
+yarn dev        # Watch mode
+yarn typecheck  # Type-check without emitting
+yarn deploy     # Deploy to OpenCode, Claude Code, and Pi configs
+yarn test       # Run the test suite
 ```
