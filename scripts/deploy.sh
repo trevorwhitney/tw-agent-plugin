@@ -196,6 +196,43 @@ for cmd_file in "${SUPERPOWERS_DIR}/commands"/*.md; do
 	copy_item "$cmd_file" "${COMMANDS_TARGET}/${cmd_name}" "superpowers: ${cmd_name}"
 done
 
+# ── Autoresearch (third-party plugin) ────────────────────────
+# https://github.com/moedesux/autoresearch-opencode/blob/master/QUICKSTART.md
+# Cloned to a harness-neutral location, then its own install.sh copies the
+# plugin/skill/command into ${OPENCODE_DIR}. --force skips the interactive prompt.
+AUTORESEARCH_DIR="${HOME}/.agents/autoresearch-opencode"
+AUTORESEARCH_REPO="https://github.com/moedesux/autoresearch-opencode.git"
+mkdir -p "$(dirname "$AUTORESEARCH_DIR")"
+
+echo ""
+echo "Autoresearch:"
+
+if [ -d "$AUTORESEARCH_DIR/.git" ]; then
+	current_remote="$(git -C "$AUTORESEARCH_DIR" remote get-url origin 2>/dev/null || true)"
+	if [ "$current_remote" != "$AUTORESEARCH_REPO" ]; then
+		echo "  [update] switching autoresearch remote to ${AUTORESEARCH_REPO}"
+		git -C "$AUTORESEARCH_DIR" remote set-url origin "$AUTORESEARCH_REPO"
+	fi
+	echo "  [update] pulling latest autoresearch..."
+	git -C "$AUTORESEARCH_DIR" pull --ff-only --quiet
+else
+	if [ -e "$AUTORESEARCH_DIR" ]; then
+		echo "  [backup] ${AUTORESEARCH_DIR} -> ${AUTORESEARCH_DIR}.bak"
+		mv "$AUTORESEARCH_DIR" "${AUTORESEARCH_DIR}.bak"
+	fi
+	echo "  [clone] cloning autoresearch..."
+	git clone --quiet "$AUTORESEARCH_REPO" "$AUTORESEARCH_DIR"
+fi
+
+if [ -x "${AUTORESEARCH_DIR}/scripts/install.sh" ]; then
+	echo "  [install] running autoresearch install.sh..."
+	if ! "${AUTORESEARCH_DIR}/scripts/install.sh" --force; then
+		echo "  [warn] autoresearch install failed (continuing)"
+	fi
+else
+	echo "  [skip] autoresearch install.sh not found or not executable"
+fi
+
 # ── Workmux (legacy cleanup) ─────────────────────────────────
 # Workmux status and commands are now integrated into tw-opencode-plugin.
 # Clean up artifacts from the previous deploy approach.
