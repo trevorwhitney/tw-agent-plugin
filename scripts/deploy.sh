@@ -224,13 +224,23 @@ else
 	git clone --quiet "$AUTORESEARCH_REPO" "$AUTORESEARCH_DIR"
 fi
 
-if [ -x "${AUTORESEARCH_DIR}/scripts/install.sh" ]; then
+autoresearch_install="${AUTORESEARCH_DIR}/scripts/install.sh"
+if [ -f "$autoresearch_install" ]; then
+	# autoresearch install.sh uses `declare -A` (Bash 4+), but ships a
+	# `#!/bin/bash` shebang, which on macOS is Bash 3.2 and fails. Rewrite the
+	# shebang to `#!/usr/bin/env bash` so it picks up a modern bash from PATH.
+	# Re-applied every deploy because clone/pull restores the upstream file.
+	if head -n1 "$autoresearch_install" | grep -q '^#!/bin/bash'; then
+		echo "  [patch] rewriting autoresearch install.sh shebang to env bash"
+		sed -i.bak '1s|^#!/bin/bash|#!/usr/bin/env bash|' "$autoresearch_install"
+		rm -f "${autoresearch_install}.bak"
+	fi
 	echo "  [install] running autoresearch install.sh..."
-	if ! "${AUTORESEARCH_DIR}/scripts/install.sh" --force; then
+	if ! "$autoresearch_install" --force; then
 		echo "  [warn] autoresearch install failed (continuing)"
 	fi
 else
-	echo "  [skip] autoresearch install.sh not found or not executable"
+	echo "  [skip] autoresearch install.sh not found"
 fi
 
 # ── Workmux (legacy cleanup) ─────────────────────────────────
