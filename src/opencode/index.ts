@@ -33,6 +33,12 @@ import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { COMMENT_RULES } from "../comment-rules.js";
 import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
+import { SECRET_HANDLING_RULES } from "../secret-redaction/rules.js";
+import {
+  redact,
+  captureSecretsFromCommand,
+  captureSecretsFromFileRead,
+} from "../secret-redaction/redactor.js";
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
 import { createGcxTools } from "../grafana/gcx-tools.js";
@@ -45,6 +51,7 @@ const COMBINED_RULES = [
   COMMENT_RULES,
   BEADS_AWARENESS,
   ORCHESTRATION_RULES,
+  SECRET_HANDLING_RULES,
 ].join("\n");
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
@@ -88,6 +95,29 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
 
     "chat.message": async (_input, output) => {
       await beads.handleChatMessage(_input, output);
+    },
+
+    // Redact credential values from tool output before it reaches the model.
+    // Also learns exact secret values from known secret sources (op/agenix,
+    // token/password files) so they are masked in all subsequent output.
+    "tool.execute.after": async (input, output) => {
+      try {
+        if (input.tool === "bash") {
+          const command = String(input.args?.command ?? "");
+          captureSecretsFromCommand(command, output.output ?? "");
+        } else if (input.tool === "read") {
+          const path = String(input.args?.filePath ?? "");
+          captureSecretsFromFileRead(path, output.output ?? "");
+        }
+      } catch {
+        /* capture is best-effort; never block on it */
+      }
+      if (typeof output.output === "string") {
+        output.output = redact(output.output);
+      }
+      if (typeof output.title === "string") {
+        output.title = redact(output.title);
+      }
     },
 
     "command.execute.before": async (input, output) => {
