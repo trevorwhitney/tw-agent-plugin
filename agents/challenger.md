@@ -1,7 +1,7 @@
 ---
 description: Adversarial review of plans, specs, and analyses. Find what others missed. Read-only. Use when you need stress-testing of a proposal before committing to it.
 mode: subagent
-model: anthropic/claude-opus-4-6
+model: anthropic/claude-opus-4-8
 tools:
   write: false
   edit: false

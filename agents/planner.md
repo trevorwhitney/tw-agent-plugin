@@ -1,7 +1,7 @@
 ---
 description: Take a spec or feature description and produce a detailed implementation plan with atomic, dependency-ordered tasks. Use when about to build something multi-step.
 mode: subagent
-model: anthropic/claude-opus-4-6
+model: anthropic/claude-opus-4-8
 tools:
   write: false
   edit: false

@@ -1,7 +1,7 @@
 ---
 description: Review completed code changes for quality, maintainability, and consistency with existing codebase patterns. Use after a logical chunk of code is written, before merging.
 mode: subagent
-model: openai/gpt-5.3-codex
+model: openai/gpt-5.4
 tools:
   write: false
   edit: false
