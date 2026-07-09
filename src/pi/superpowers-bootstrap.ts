@@ -26,7 +26,7 @@ const USING_SUPERPOWERS_SKILL = join(
 /** Pi-specific tool mapping appended to the bootstrap block. */
 const TOOL_MAPPING = `**Tool Mapping for Pi:**
 When skills reference tools that don't exist in pi, substitute these:
-- \`TodoWrite\` → use beads (\`bd\` CLI via \`bash\`); see beads guidance in your context for commands.
+- \`TodoWrite\` → track tasks in a \`TODO.md\` file in the current working directory (markdown checklist).
 - \`Task\` tool / subagent dispatch → use the \`subagent\` tool (single / parallel / chain modes).
 - \`Skill\` tool → use the \`skill\` tool with the skill name (e.g. \`skill("brainstorming")\`). This loads the full skill content by name from the available_skills list.
 - \`Read\`, \`Write\`, \`Edit\`, \`Bash\`, \`Glob\`, \`Grep\` → pi has \`read\`, \`write\`, \`edit\`, \`bash\` natively (use \`bash\` with \`rg\`/\`find\` for glob/grep).

@@ -155,7 +155,7 @@ export async function handleSessionIdle(
         parts: [
           {
             type: "text",
-            text: `[auto-continue] You have incomplete todos remaining. Continue working on the next pending item.${goalReminder} If all work is actually complete, mark remaining todos as completed or cancelled, disable auto-continue, and check \`bd ready\` for any beads issues ready to work on.`,
+            text: `[auto-continue] You have incomplete todos remaining. Continue working on the next pending item.${goalReminder} If all work is actually complete, mark remaining todos as completed or cancelled, disable auto-continue, and check \`TODO.md\` in the current working directory for any remaining tasks.`,
           },
         ],
       },

@@ -4,7 +4,7 @@ import { runReviewPipeline } from "../review/pipeline.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
 import { runCouncil } from "../council/tool.js";
 import { loadOpencodePluginConfig } from "../shared/config.js";
-import type { EventSessionStatus, EventSessionCompacted, TextPart } from "@opencode-ai/sdk";
+import type { EventSessionStatus, TextPart } from "@opencode-ai/sdk";
 import {
   setAutoContinue,
   handleSessionIdle,
@@ -21,12 +21,7 @@ import {
   goalCompactionContext,
   scanForGoalMarkers,
 } from "../goal.js";
-import {
-  loadCommands,
-  loadAgent,
-  createBeadsContextManager,
-  BEADS_AWARENESS,
-} from "../beads/index.js";
+import { TODO_TRACKING_AWARENESS } from "../beads/index.js";
 import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
@@ -49,18 +44,13 @@ const COMBINED_RULES = [
   OBSIDIAN_DOCS_RULES,
   GIT_COMMIT_RULES,
   COMMENT_RULES,
-  BEADS_AWARENESS,
+  TODO_TRACKING_AWARENESS,
   ORCHESTRATION_RULES,
   SECRET_HANDLING_RULES,
 ].join("\n");
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
-  const [beadsCommands, beadsAgents, workmuxCommands] = await Promise.all([
-    loadCommands(),
-    loadAgent(),
-    loadWorkmuxCommands(),
-  ]);
-  const beads = createBeadsContextManager(client, $);
+  const workmuxCommands = await loadWorkmuxCommands();
 
   return {
     // Inject rules into the first user message of each session rather than
@@ -91,10 +81,6 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
         type: "text",
         text: COMBINED_RULES,
       });
-    },
-
-    "chat.message": async (_input, output) => {
-      await beads.handleChatMessage(_input, output);
     },
 
     // Redact credential values from tool output before it reaches the model.
@@ -236,9 +222,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
         case "global.disposed":
           await $`workmux set-window-status clear`.quiet().nothrow();
           break;
-        case "session.compacted":
-          await beads.handleCompactionEvent(event as EventSessionCompacted);
-          break;
+
       }
     },
 
@@ -387,14 +371,12 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
     config: async (config) => {
       config.command = {
         ...config.command,
-        ...beadsCommands,
         ...workmuxCommands,
         goal: {
           template: "goal",
           description: "Session goal. /goal <text> to set, /goal to show, /goal pause|resume|clear",
         },
       };
-      config.agent = { ...config.agent, ...beadsAgents };
     },
   };
 };

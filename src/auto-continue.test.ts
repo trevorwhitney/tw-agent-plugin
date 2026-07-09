@@ -97,7 +97,7 @@ describe("auto-continue", () => {
     );
   });
 
-  it("includes beads check-in in message", async () => {
+  it("includes TODO.md check-in in message", async () => {
     setAutoContinue("session-1", true);
     const client = createMockClient({ todos: pendingTodos });
     const result = await handleSessionIdle(client, "session-1");
@@ -105,7 +105,7 @@ describe("auto-continue", () => {
     expect(client.session.promptAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
-          parts: [{ type: "text", text: expect.stringContaining("bd ready") }],
+          parts: [{ type: "text", text: expect.stringContaining("TODO.md") }],
         }),
       })
     );

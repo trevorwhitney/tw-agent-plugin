@@ -16,10 +16,9 @@ import {
 import { createPiRunner } from "./pi/runner.js";
 import { getSuperpowersBootstrap } from "./pi/superpowers-bootstrap.js";
 import { registerGcxTools } from "./grafana/gcx-pi.js";
-import { BEADS_AWARENESS } from "./beads/index.js";
-import { BEADS_GUIDANCE, loadCommands as loadBeadsCommands } from "./beads/vendor.js";
+import { TODO_TRACKING_AWARENESS } from "./beads/index.js";
 import { loadCommands as loadWorkmuxCommands } from "./workmux/index.js";
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,110 +37,28 @@ function runShellQuiet(command: string, cwd?: string): boolean {
   }
 }
 
-function shellOutput(command: string, cwd?: string): string {
-  try {
-    return execSync(command, {
-      cwd,
-      timeout: 10_000,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "";
-  }
-}
-
-function isGitRepo(cwd?: string): boolean {
-  return shellOutput("git rev-parse --git-dir", cwd) !== "";
-}
-
-function tryAutoInit(cwd?: string): boolean {
-  if (!isGitRepo(cwd)) return false;
-  try {
-    const result = spawnSync("bd", ["init", "--stealth", "--quiet"], {
-      cwd,
-      stdio: "ignore",
-      timeout: 10_000,
-    });
-    return result.status === 0;
-  } catch {
-    return false;
-  }
-}
-
-function getBeadsPrimeOutput(cwd?: string): string {
-  return shellOutput("bd prime", cwd);
-}
-
 // ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
 export default function(pi: ExtensionAPI) {
-  // Track which sessions have had beads context injected
-  const injectedSessions = new Set<string>();
   // Skills discovered by pi, updated on each turn via before_agent_start
   let discoveredSkills: Skill[] = [];
 
-  // ── System prompt: tool priority rules + beads awareness ──────────────
-  pi.on("before_agent_start", async (event, ctx) => {
+  // ── System prompt: tool priority rules + TODO.md task tracking ────────
+  pi.on("before_agent_start", async (event) => {
     // Capture discovered skills so the skill tool can resolve by name
     discoveredSkills = event.systemPromptOptions.skills ?? [];
 
-    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + OBSIDIAN_DOCS_RULES + "\n\n" + GIT_COMMIT_RULES + "\n\n" + COMMENT_RULES + "\n\n" + BEADS_AWARENESS + "\n\n" + ORCHESTRATION_RULES;
+    let extraSystemPrompt = "\n\n" + TOOL_PRIORITY_RULES + "\n\n" + OBSIDIAN_DOCS_RULES + "\n\n" + GIT_COMMIT_RULES + "\n\n" + COMMENT_RULES + "\n\n" + TODO_TRACKING_AWARENESS + "\n\n" + ORCHESTRATION_RULES;
     const bootstrap = await getSuperpowersBootstrap();
     if (bootstrap) {
       extraSystemPrompt += "\n\n" + bootstrap;
     }
 
-    // Inject beads context as a message on the first turn of each session
-    const sessionFile = ctx.sessionManager.getSessionFile();
-    const sessionKey = sessionFile ?? "ephemeral";
-
-    if (!injectedSessions.has(sessionKey)) {
-      injectedSessions.add(sessionKey);
-
-      // Check if beads context was already injected (e.g., after resume/fork)
-      const entries = ctx.sessionManager.getEntries();
-      const hasBeadsContext = entries.some(
-        (e) => e.type === "custom" && e.customType === "beads-context",
-      );
-
-      if (!hasBeadsContext) {
-        let primeOutput = getBeadsPrimeOutput(ctx.cwd);
-        if (!primeOutput) {
-          // Try auto-init then retry
-          if (tryAutoInit(ctx.cwd)) {
-            primeOutput = getBeadsPrimeOutput(ctx.cwd);
-          }
-        }
-
-        if (primeOutput) {
-          const beadsContext = `<beads-context>\n${primeOutput}\n</beads-context>\n\n${BEADS_GUIDANCE}`;
-          pi.appendEntry("beads-context", { text: beadsContext });
-          return {
-            systemPrompt: event.systemPrompt + extraSystemPrompt,
-            message: {
-              customType: "beads-context",
-              content: beadsContext,
-              display: false,
-            },
-          };
-        }
-      }
-    }
-
     return {
       systemPrompt: event.systemPrompt + extraSystemPrompt,
     };
-  });
-
-  // ── Re-inject beads context after compaction ──────────────────────────
-  // Clear the injection tracking so next before_agent_start re-injects fresh context.
-  pi.on("session_compact", async (_event, _ctx) => {
-    const sessionFile = _ctx.sessionManager.getSessionFile();
-    const sessionKey = sessionFile ?? "ephemeral";
-    injectedSessions.delete(sessionKey);
   });
 
   // ── Workmux status tracking ───────────────────────────────────────────
@@ -172,25 +89,6 @@ export default function(pi: ExtensionAPI) {
     for (const [name, cmd] of Object.entries(commands)) {
       try {
         // name is "workmux:foo" — register as "/workmux:foo"
-        pi.registerCommand(name, {
-          description: cmd.description,
-          handler: async (args, _ctx) => {
-            const prompt = cmd.template.replace(/\$ARGUMENTS/g, args || "");
-            pi.sendUserMessage(prompt);
-          },
-        });
-      } catch {
-        // Context went stale — commands will be re-registered on next load
-        break;
-      }
-    }
-  });
-
-  // ── Register beads commands ───────────────────────────────────────────
-  loadBeadsCommands().then((commands) => {
-    if (!commands) return;
-    for (const [name, cmd] of Object.entries(commands)) {
-      try {
         pi.registerCommand(name, {
           description: cmd.description,
           handler: async (args, _ctx) => {

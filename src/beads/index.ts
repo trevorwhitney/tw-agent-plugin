@@ -1,11 +1,8 @@
-export { loadCommands, loadAgent } from "./vendor.js";
-export { createBeadsContextManager } from "./context.js";
+export const TODO_TRACKING_AWARENESS = `<todo-task-tracking>
+## Task Tracking (TODO.md)
 
-export const BEADS_AWARENESS = `<beads-task-tracking>
-## Task Tracking (beads)
-
-This environment has beads (bd) available for task tracking. Use the bash tool
-to run bd commands with --json for structured output. For multi-step beads work
-(status overviews, working through issues), delegate to the beads-task-agent
-subagent. Beads defaults to stealth mode (local-only, no git commits).
-</beads-task-tracking>`;
+Track multi-step work in a \`TODO.md\` file in the current working directory.
+Use it as the durable record of what remains: append tasks as you discover
+them, mark items done as you complete them, and consult it to decide what to
+work on next. Keep entries as a simple markdown checklist (\`- [ ]\` / \`- [x]\`).
+</todo-task-tracking>`;
