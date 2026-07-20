@@ -1,7 +1,7 @@
 ---
 description: Review code for security issues — authentication, authorization, secret handling, input validation, crypto, deserialization, SQL injection, command injection, path traversal, unsafe network handling, exposed credentials, JWT/session handling, CSRF, XSS, RCE, or any handling of untrusted user input. Use when a diff touches auth, secrets, network boundaries, file paths from user input, or third-party integrations.
 mode: subagent
-model: openai/gpt-5.4
+model: anthropic/claude-opus-4-8
 tools:
   write: false
   edit: false

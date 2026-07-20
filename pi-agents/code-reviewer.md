@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Review completed code changes for quality, maintainability, and consistency with existing codebase patterns. Use after a logical chunk of code is written, before merging.
-model: openai/gpt-5.3-codex
+model: anthropic/claude-opus-4-6
 tools: read,grep,find,ls,bash
 ---
 
