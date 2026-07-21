@@ -21,7 +21,7 @@ import {
   goalCompactionContext,
   scanForGoalMarkers,
 } from "../goal.js";
-import { TODO_TRACKING_AWARENESS } from "../beads/index.js";
+import { TODO_TRACKING_AWARENESS } from "../todo-tracking/index.js";
 import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";

@@ -16,7 +16,7 @@ import {
 import { createPiRunner } from "./pi/runner.js";
 import { getSuperpowersBootstrap } from "./pi/superpowers-bootstrap.js";
 import { registerGcxTools } from "./grafana/gcx-pi.js";
-import { TODO_TRACKING_AWARENESS } from "./beads/index.js";
+import { TODO_TRACKING_AWARENESS } from "./todo-tracking/index.js";
 import { loadCommands as loadWorkmuxCommands } from "./workmux/index.js";
 import { spawnSync } from "node:child_process";
 
