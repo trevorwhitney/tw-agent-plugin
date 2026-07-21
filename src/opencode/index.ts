@@ -37,6 +37,7 @@ import {
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
 import { createGcxTools } from "../grafana/gcx-tools.js";
+import { serversDir, publishServer, unpublishServer, createSendToAgentTool } from "../agent-messaging/index.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
 const COMBINED_RULES = [
@@ -49,8 +50,9 @@ const COMBINED_RULES = [
   SECRET_HANDLING_RULES,
 ].join("\n");
 
-export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
+export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl }) => {
   const workmuxCommands = await loadWorkmuxCommands();
+  await publishServer(serversDir(), worktree, serverUrl).catch(() => {});
 
   return {
     // Inject rules into the first user message of each session rather than
@@ -366,6 +368,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
           return result.synthesis;
         },
       }),
+      "send-to-agent": createSendToAgentTool(),
       },
 
     config: async (config) => {
@@ -377,6 +380,10 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
           description: "Session goal. /goal <text> to set, /goal to show, /goal pause|resume|clear",
         },
       };
+    },
+
+    dispose: async () => {
+      await unpublishServer(serversDir(), worktree).catch(() => {});
     },
   };
 };
