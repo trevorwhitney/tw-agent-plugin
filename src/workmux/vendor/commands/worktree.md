@@ -94,3 +94,14 @@ After creating the worktrees, inform the user which branches were created.
 
 **Remember:** Your task is COMPLETE once worktrees are created. Do NOT implement
 anything yourself.
+
+## Follow-up communication
+
+Spawning is fire-and-forget — your job ends when the worktrees exist. If
+coordination is needed *later*, a running worktree agent is addressable by its
+handle (the worktree directory name) via the `send-to-agent` tool, which
+delivers a message into that agent's live session (runs if idle, queues if
+busy); agents can message each other the same way. Reach for it only when a
+running agent genuinely needs a follow-up task, a question answered, or
+coordination — not as part of the initial spawn. Use the workmux/coordinator
+flow for lifecycle (`status`, `wait`, `capture`, `merge`).

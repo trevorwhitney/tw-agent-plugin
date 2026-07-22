@@ -28,4 +28,12 @@ Before executing any multi-step task (3+ steps), pause and evaluate:
 
 **Skip delegation when:** overhead of explaining > doing it yourself, sequential dependencies require your current context, or the task is trivially small.
 
+## Subagents vs. worktree agents vs. messaging
+
+Three distinct execution surfaces — pick deliberately:
+
+- **\`Task\`-tool subagents** — in-session, isolated context, ephemeral; you await one summarized result. Use for scoped discovery/implementation you fold back into this session.
+- **workmux worktree agents** — separate, long-lived opencode processes, each in its own git worktree/branch. This is the right response to "spawn an agent" / "do that in a new worktree": spawn is **fire-and-forget** via the workmux worktree flow (\`workmux add\`), with \`status\`/\`wait\`/\`capture\`/\`merge\` for lifecycle. Do not set up communication unless coordination is actually needed.
+- **\`send-to-agent\` tool** — message an already-running worktree agent (or let peer agents message each other) by its handle (the worktree directory name). The message is delivered into the target's live session: runs if idle, queues if busy. Use this — not \`workmux send\` — to hand a running agent a task, ask it a question, or coordinate between agents. Reserve \`workmux send\` for typing TUI/slash-commands (e.g. \`/merge\`) into a pane.
+
 </orchestration-rules>`;

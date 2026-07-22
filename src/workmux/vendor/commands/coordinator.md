@@ -12,8 +12,8 @@ monitor them, send instructions, and trigger merges.
 
 - **Worktree agent**: a Claude Code session running in its own git
   worktree/branch
-- **Handle**: the worktree directory name, used to address agents in all
-  commands
+- **Handle**: the worktree directory name — used both to address agents in
+  `workmux` commands and as the target of the `send-to-agent` tool
 - **Cross-project targeting**: agent commands (`send`, `capture`, `status`,
   `wait`, `run`) can target agents in other projects. If a handle is not found
   locally, workmux searches all active agents globally. Use `project:handle`
@@ -21,7 +21,14 @@ monitor them, send instructions, and trigger merges.
 - **Statuses**: `working` (processing), `waiting` (needs user input), `done`
   (finished). Set automatically by agent hooks. Agents typically go `working` ->
   `done`; `waiting` only occurs if the agent prompts for input
-- Agents run in background tmux windows; you interact via CLI only
+- **Messaging**: to hand a running agent a task, ask it a question, or relay
+  coordination between agents, use the `send-to-agent` tool (addresses agents by
+  handle; delivered into the agent's live session — runs if idle, queues if
+  busy). Reserve `workmux send` for typing TUI/slash-commands (e.g. `/merge`)
+  into a pane. Use the remaining `workmux` commands (`status`, `wait`,
+  `capture`, `run`, `add`, `remove`, `merge`) for lifecycle and inspection.
+- Agents run in background tmux windows; drive lifecycle via `workmux` and
+  messaging via `send-to-agent`
 
 ## Command Reference
 
@@ -109,23 +116,28 @@ workmux capture agent-a -n 50
 
 Output is ANSI-stripped plain text.
 
-### Send Instructions
+### Message an Agent
+
+Prefer the `send-to-agent` tool to hand a running agent a task, ask it a
+question, or relay coordination between agents. It addresses the agent by its
+handle and delivers the message into the agent's live session (runs if idle,
+queues if busy), with sender-identity framing. Agents can use it to message each
+other, not just you. A wrong handle returns the list of known agents.
+
+Reserve `workmux send` for typing raw input into an agent's TUI pane — chiefly
+slash-commands the agent must run itself (e.g. `/merge`, `/commit`), or long
+input from a file:
 
 ```bash
-# Send a short instruction
-workmux send agent-a "fix the failing tests"
+# Slash-command into the agent's TUI
+workmux send agent-a "/merge"
 
-# Send a skill command
-workmux send agent-a "/commit"
-
-# Send from file (for long prompts)
+# Long input from a file
 workmux send agent-a -f followup.md
 
-# Send to an agent in another project (global fallback)
-workmux send other-worktree "run the tests"
-
-# Disambiguate with project:handle when names collide
-workmux send myproject:docs-update "also add the API reference"
+# Cross-project (global fallback); disambiguate with project:handle on collision
+workmux send other-worktree "/commit"
+workmux send myproject:docs-update "/merge"
 ```
 
 ### Run Commands
@@ -209,8 +221,8 @@ workmux wait auth-module --timeout 120
 workmux send api-tests "/merge"
 workmux wait api-tests --timeout 120
 
-# 7. Send follow-up if needed
-workmux send docs-update "also add the API reference section"
+# 7. Send a follow-up task with the send-to-agent tool if needed, then merge
+#    (the follow-up is a tool call; /merge is a slash-command via workmux send)
 workmux wait docs-update
 workmux send docs-update "/merge"
 ```
