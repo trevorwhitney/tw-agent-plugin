@@ -16,10 +16,10 @@ afterEach(async () => {
 describe("publisher", () => {
   it("writes serverUrl (stringifying the URL) and removes it on unpublish", async () => {
     const worktree = await mkdtemp(join(tmpdir(), "wt-"));
-    await publishServer(dir, worktree, new URL("http://127.0.0.1:5005"));
-    expect(await readServerUrl(dir, worktree)).toBe("http://127.0.0.1:5005/");
-    await unpublishServer(dir, worktree);
-    expect(await readServerUrl(dir, worktree)).toBeNull();
+    await publishServer(dir, worktree, "opencode#0", new URL("http://127.0.0.1:5005"));
+    expect(await readServerUrl(dir, worktree, "opencode#0")).toBe("http://127.0.0.1:5005/");
+    await unpublishServer(dir, worktree, "opencode#0");
+    expect(await readServerUrl(dir, worktree, "opencode#0")).toBeNull();
     await rm(worktree, { recursive: true, force: true });
   });
 });

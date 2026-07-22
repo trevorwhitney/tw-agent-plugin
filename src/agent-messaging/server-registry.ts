@@ -6,6 +6,7 @@ export const SERVER_SCHEMA = 1;
 
 export type ServerRecord = {
   path: string;
+  slot: string;
   serverUrl: string;
   updatedTs: number;
   schema: number;
@@ -14,19 +15,24 @@ export type ServerRecord = {
 export async function writeServerRecord(
   dir: string,
   worktreePath: string,
+  slot: string,
   serverUrl: string,
 ): Promise<void> {
   await mkdir(dir, { recursive: true });
   const path = normalizePath(worktreePath);
-  const rec: ServerRecord = { path, serverUrl, updatedTs: Date.now(), schema: SERVER_SCHEMA };
-  const file = join(dir, serverFileName(path));
+  const rec: ServerRecord = { path, slot, serverUrl, updatedTs: Date.now(), schema: SERVER_SCHEMA };
+  const file = join(dir, serverFileName(path, slot));
   const tmp = file + ".tmp";
   await writeFile(tmp, JSON.stringify(rec));
   await rename(tmp, file);
 }
 
-export async function readServerUrl(dir: string, worktreePath: string): Promise<string | null> {
-  const file = join(dir, serverFileName(worktreePath));
+export async function readServerUrl(
+  dir: string,
+  worktreePath: string,
+  slot: string,
+): Promise<string | null> {
+  const file = join(dir, serverFileName(worktreePath, slot));
   try {
     const rec = JSON.parse(await readFile(file, "utf-8")) as ServerRecord;
     return typeof rec.serverUrl === "string" ? rec.serverUrl : null;
@@ -35,16 +41,21 @@ export async function readServerUrl(dir: string, worktreePath: string): Promise<
   }
 }
 
-export async function deleteServerRecord(dir: string, worktreePath: string): Promise<void> {
+export async function deleteServerRecord(
+  dir: string,
+  worktreePath: string,
+  slot: string,
+): Promise<void> {
   try {
-    await unlink(join(dir, serverFileName(worktreePath)));
+    await unlink(join(dir, serverFileName(worktreePath, slot)));
   } catch {
     /* absent is fine */
   }
 }
 
-// Recover the worktree path from the filename rather than parsing the file, so
-// prune still works when a record is partially written or corrupt.
+// The filename encodes worktree+slot, so recover the worktree from the record's
+// own `path` field rather than parsing the name. Corrupt/partial records are
+// left in place; the owning agent overwrites them on its next publish.
 export async function pruneDeadServers(dir: string): Promise<void> {
   let files: string[];
   try {
@@ -54,11 +65,19 @@ export async function pruneDeadServers(dir: string): Promise<void> {
   }
   for (const name of files) {
     if (!name.endsWith(".json")) continue;
-    const worktreePath = decodeURIComponent(name.slice(0, -".json".length));
+    const file = join(dir, name);
+    let worktreePath: string | null = null;
+    try {
+      const rec = JSON.parse(await readFile(file, "utf-8")) as ServerRecord;
+      if (typeof rec.path === "string") worktreePath = rec.path;
+    } catch {
+      continue;
+    }
+    if (!worktreePath) continue;
     try {
       await access(worktreePath);
     } catch {
-      await unlink(join(dir, name)).catch(() => {});
+      await unlink(file).catch(() => {});
     }
   }
 }

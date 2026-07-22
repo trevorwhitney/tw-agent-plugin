@@ -41,6 +41,7 @@ describe("sendToAgent", () => {
   it("delivers via promptAsync to the resolved server + session", async () => {
     const { d, promptAsync } = deps();
     const out = await sendToAgent({ to: "compaction", message: "go" }, d as any);
+    expect(d.readServerUrl).toHaveBeenCalledWith(expect.any(String), "opencode#0");
     expect(d.makeClient).toHaveBeenCalledWith("http://127.0.0.1:5001/");
     expect(promptAsync).toHaveBeenCalledWith({
       path: { id: "ses_a" },
@@ -54,6 +55,14 @@ describe("sendToAgent", () => {
       },
     });
     expect(out).toMatch(/delivered to compaction/i);
+  });
+
+  it("looks up the server record by the target's slot (mode#idx)", async () => {
+    const { d } = deps({
+      records: [rec({ handle: "slot1", idx: 1, session_id: "ses_1" })],
+    });
+    await sendToAgent({ to: "slot1", message: "go" }, d as any);
+    expect(d.readServerUrl).toHaveBeenCalledWith(expect.any(String), "opencode#1");
   });
 
   it("errors and lists handles when target unknown", async () => {

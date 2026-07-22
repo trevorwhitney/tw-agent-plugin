@@ -37,7 +37,13 @@ import {
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
 import { createGcxTools } from "../grafana/gcx-tools.js";
-import { serversDir, publishServer, unpublishServer, createSendToAgentTool } from "../agent-messaging/index.js";
+import {
+  serversDir,
+  agentSlot,
+  publishServer,
+  unpublishServer,
+  createSendToAgentTool,
+} from "../agent-messaging/index.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
 const COMBINED_RULES = [
@@ -52,7 +58,8 @@ const COMBINED_RULES = [
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl }) => {
   const workmuxCommands = await loadWorkmuxCommands();
-  await publishServer(serversDir(), worktree, serverUrl).catch(() => {});
+  const slot = agentSlot();
+  await publishServer(serversDir(), worktree, slot, serverUrl).catch(() => {});
 
   return {
     // Inject rules into the first user message of each session rather than
@@ -383,7 +390,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
     },
 
     dispose: async () => {
-      await unpublishServer(serversDir(), worktree).catch(() => {});
+      await unpublishServer(serversDir(), worktree, slot).catch(() => {});
     },
   };
 };

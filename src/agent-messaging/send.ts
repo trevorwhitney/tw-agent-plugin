@@ -7,7 +7,7 @@ export type SendArgs = { to: string; message: string };
 export type SendDeps = {
   selfWorktree: string;
   records: MirrorRecord[];
-  readServerUrl: (worktreePath: string) => Promise<string | null>;
+  readServerUrl: (worktreePath: string, slot: string) => Promise<string | null>;
   makeClient: (baseUrl: string) => { session: { promptAsync: (opts: any) => Promise<any> } };
 };
 
@@ -23,7 +23,7 @@ export async function sendToAgent(args: SendArgs, deps: SendDeps): Promise<strin
   if (!target.session_id) {
     return `Agent "${args.to}" session not ready yet — retry shortly.`;
   }
-  const serverUrl = await deps.readServerUrl(target.path);
+  const serverUrl = await deps.readServerUrl(target.path, `${target.mode}#${target.idx}`);
   if (!serverUrl) {
     return `Agent "${args.to}" server address unknown (it may be down or still starting).`;
   }

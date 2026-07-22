@@ -5,7 +5,7 @@ import { readMirror } from "./mirror.js";
 import { readServerUrl } from "./server-registry.js";
 import { sendToAgent } from "./send.js";
 
-export { serversDir } from "./paths.js";
+export { serversDir, agentSlot } from "./paths.js";
 export { publishServer, unpublishServer } from "./publisher.js";
 
 export function createSendToAgentTool(): ReturnType<typeof tool> {
@@ -26,7 +26,7 @@ export function createSendToAgentTool(): ReturnType<typeof tool> {
         {
           selfWorktree: context.worktree,
           records,
-          readServerUrl: (p) => readServerUrl(sDir, p),
+          readServerUrl: (p, slot) => readServerUrl(sDir, p, slot),
           makeClient: (baseUrl) => createOpencodeClient({ baseUrl }) as any,
         },
       );

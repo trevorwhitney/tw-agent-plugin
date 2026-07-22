@@ -23,7 +23,7 @@ run("end-to-end send", () => {
       const created = await remote.session.create({ body: { title: "e2e" } });
       const id = created.data!.id;
 
-      await publishServer(stateServers, targetWorktree, new URL(server.url));
+      await publishServer(stateServers, targetWorktree, "opencode#0", new URL(server.url));
       await writeFile(
         join(stateAgents, "rec.json"),
         JSON.stringify({
@@ -39,7 +39,7 @@ run("end-to-end send", () => {
         {
           selfWorktree: "/nonexistent/other/worktree",
           records,
-          readServerUrl: (p) => readServerUrl(stateServers, p),
+          readServerUrl: (p, slot) => readServerUrl(stateServers, p, slot),
           makeClient: (baseUrl) => createOpencodeClient({ baseUrl }) as any,
         },
       );

@@ -1,10 +1,15 @@
 import { writeServerRecord, deleteServerRecord, pruneDeadServers } from "./server-registry.js";
 
-export async function publishServer(dir: string, worktree: string, serverUrl: URL): Promise<void> {
+export async function publishServer(
+  dir: string,
+  worktree: string,
+  slot: string,
+  serverUrl: URL,
+): Promise<void> {
   await pruneDeadServers(dir);
-  await writeServerRecord(dir, worktree, serverUrl.toString());
+  await writeServerRecord(dir, worktree, slot, serverUrl.toString());
 }
 
-export async function unpublishServer(dir: string, worktree: string): Promise<void> {
-  await deleteServerRecord(dir, worktree);
+export async function unpublishServer(dir: string, worktree: string, slot: string): Promise<void> {
+  await deleteServerRecord(dir, worktree, slot);
 }
