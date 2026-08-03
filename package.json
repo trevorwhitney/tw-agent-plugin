@@ -13,8 +13,7 @@
     "./opencode": {
       "types": "./dist/opencode/index.d.ts",
       "import": "./dist/opencode/index.js"
-    },
-    "./pi": "./src/tw-pi.ts"
+    }
   },
   "files": [
     "dist"
@@ -37,8 +36,6 @@
     "@opencode-ai/plugin": "^1.16.2"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "^0.75.3",
-    "@earendil-works/pi-coding-agent": "^0.75.3",
     "@types/node": "^22.13.9",
     "husky": "^9.1.7",
     "typescript": "^5.8.2",

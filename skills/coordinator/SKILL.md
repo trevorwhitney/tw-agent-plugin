@@ -13,7 +13,7 @@ monitor them, send instructions, and trigger merges.
 
 ## Core Concepts
 
-- **Worktree agent**: a Claude Code session running in its own git
+- **Worktree agent**: an opencode session running in its own git
   worktree/branch
 - **Handle**: the worktree directory name — used both to address agents in
   `workmux` commands and as the target of the `send-to-agent` tool

@@ -1,11 +1,10 @@
 // ---------------------------------------------------------------------------
-// gcx command spec — runtime-agnostic source of truth for the gcx_* tools.
+// gcx command spec — source of truth for the gcx_* tools.
 //
-// Both the opencode adapter (src/grafana/gcx-tools.ts) and the pi adapter
-// (src/grafana/gcx-pi.ts) consume these specs to register their tools. The
-// spec describes each tool's name, description, parameters, and how to build
-// the argv from validated parameters. Neither schema library (zod / TypeBox)
-// leaks into this module.
+// The opencode adapter (src/grafana/gcx-tools.ts) consumes these specs to
+// register its tools. The spec describes each tool's name, description,
+// parameters, and how to build the argv from validated parameters. The zod
+// schema library does not leak into this module.
 // ---------------------------------------------------------------------------
 
 // ── Neutral parameter descriptors ───────────────────────────────────────────
