@@ -44,6 +44,8 @@ import {
   unpublishServer,
   createSendToAgentTool,
 } from "../agent-messaging/index.js";
+import { createReportTool, createEscalateTool } from "../agentd/tools.js";
+import { registerAgentdSession } from "../agentd/register.js";
 
 // Pre-build a single combined rules block so we only prepend one text part.
 const COMBINED_RULES = [
@@ -225,6 +227,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
           if (createdProps?.id) {
             resetSessionContinueCount(createdProps.id);
           }
+          await registerAgentdSession(event as never).catch(() => {});
           await $`workmux set-window-status clear`.quiet().nothrow();
           break;
         }
@@ -375,8 +378,10 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
           return result.synthesis;
         },
       }),
+      report: createReportTool(),
+      escalate: createEscalateTool(),
       "send-to-agent": createSendToAgentTool(),
-      },
+    },
 
     config: async (config) => {
       config.command = {
