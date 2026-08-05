@@ -5,7 +5,7 @@ function reviewerLabel(index: number): string {
   return `Reviewer ${String.fromCharCode(65 + index)}`;
 }
 
-type PipelineConfig = { agents: string[]; timeoutMs: number };
+type PipelineConfig = { agents: string[]; timeoutMs: number; scopePreamble?: string };
 
 export async function runReviewPipeline(
   runSubagent: RunSubagent,
@@ -16,7 +16,15 @@ export async function runReviewPipeline(
   const agents = config.agents;
   const labels = agents.map((_, i) => reviewerLabel(i));
 
-  const { timeoutMs } = config;
+  const { timeoutMs, scopePreamble } = config;
+
+  // Prepended to Round 1 only: shared scope/hot-zones context so every
+  // independent reviewer starts from the same map of what changed and where to
+  // look hardest. Round 2 works from the Round 1 outputs, so it needs no repeat.
+  const round1Prompt = (label: string) => {
+    const base = prompts.round1(label, target);
+    return scopePreamble ? `${scopePreamble}\n\n${base}` : base;
+  };
 
   // Phase 1: parallel independent reviews
   const round1Results = await Promise.all(
@@ -24,7 +32,7 @@ export async function runReviewPipeline(
       runSubagent(
         agent,
         `Round 1 — ${labels[i]}`,
-        prompts.round1(labels[i], target),
+        round1Prompt(labels[i]),
         timeoutMs,
       ),
     ),

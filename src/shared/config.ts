@@ -21,7 +21,7 @@ export type OpencodePluginConfig = {
 };
 
 const OPENCODE_DEFAULT_ENSEMBLES: OpencodeReviewConfig = {
-  "code-review": { agents: ["code-reviewer", "challenger", "performance-reviewer"] },
+  "code-review": { agents: ["code-reviewer", "challenger", "performance-reviewer", "ship-it"] },
   "plan-review": { agents: ["challenger", "brainstormer"] },
   "spec-review": { agents: ["challenger", "brainstormer"] },
   timeoutMs: DEFAULT_TIMEOUT_MS,

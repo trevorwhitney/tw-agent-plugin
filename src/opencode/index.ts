@@ -1,6 +1,7 @@
 import { type Plugin, tool } from "@opencode-ai/plugin";
 import { loadOpencodeReviewConfig } from "../review/config.js";
 import { runReviewPipeline } from "../review/pipeline.js";
+import { gatherScope } from "../review/scope.js";
 import { codeReviewPrompts, planReviewPrompts, specReviewPrompts } from "../review/prompts/index.js";
 import { runCouncil } from "../council/tool.js";
 import { loadOpencodePluginConfig } from "../shared/config.js";
@@ -274,7 +275,13 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
                 : specReviewPrompts;
           const config = await loadOpencodeReviewConfig();
           const ensemble = config[args.type];
-          const pipelineConfig = { agents: ensemble.agents, timeoutMs: config.timeoutMs };
+          const scopePreamble =
+            args.type === "code-review" ? await gatherScope($).catch(() => "") : "";
+          const pipelineConfig = {
+            agents: ensemble.agents,
+            timeoutMs: config.timeoutMs,
+            scopePreamble,
+          };
 
           const runner = createOpencodeRunner(client, context.sessionID);
           const synthesisText = await runReviewPipeline(

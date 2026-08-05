@@ -23,7 +23,7 @@ beforeEach(async () => {
 describe("loadOpencodePluginConfig", () => {
   it("returns persona-name defaults when file is missing", async () => {
     const c = await loadOpencodePluginConfig({ configPath: opencodePath() });
-    expect(c.review["code-review"].agents).toEqual(["code-reviewer", "challenger", "performance-reviewer"]);
+    expect(c.review["code-review"].agents).toEqual(["code-reviewer", "challenger", "performance-reviewer", "ship-it"]);
     expect(c.review["plan-review"].agents).toEqual(["challenger", "brainstormer"]);
     expect(c.review["spec-review"].agents).toEqual(["challenger", "brainstormer"]);
   });
