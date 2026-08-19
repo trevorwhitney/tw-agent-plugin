@@ -181,6 +181,18 @@ for sp_skill_dir in "${SUPERPOWERS_DIR}/skills"/*/; do
 	copy_dir "$sp_skill_dir" "${SKILLS_TARGET}/superpowers/${sp_skill_name}" "superpowers/${sp_skill_name}"
 done
 
+# Prune superpowers skills whose source directory is gone. The copy loop above
+# only walks the source, so a skill deleted from the fork would otherwise be
+# served from the target forever.
+for sp_target_dir in "${SKILLS_TARGET}/superpowers"/*/; do
+	[ -d "$sp_target_dir" ] || continue
+	sp_target_name="$(basename "$sp_target_dir")"
+	if [ ! -d "${SUPERPOWERS_DIR}/skills/${sp_target_name}" ]; then
+		echo "  [remove] orphaned superpowers skill: ${sp_target_name}"
+		rm -rf "$sp_target_dir"
+	fi
+done
+
 # Clean up stale plugin skill overrides (these now come from superpowers fork)
 for stale_skill in writing-plans subagent-driven-development; do
 	if [ -d "${SKILLS_TARGET}/${stale_skill}" ]; then
