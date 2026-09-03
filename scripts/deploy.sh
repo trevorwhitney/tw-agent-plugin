@@ -3,13 +3,46 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
-OPENCODE_DIR="${HOME}/.config/opencode"
+OPENCODE_DIR="${OPENCODE_DIR:-${HOME}/.config/opencode}"
 SKILLS_TARGET="${OPENCODE_DIR}/skills"
 COMMANDS_TARGET="${OPENCODE_DIR}/command"
+WITH_SUPERPOWERS=false
+
+usage() {
+	cat <<'EOF'
+Usage: scripts/deploy.sh [--with-superpowers | --without-superpowers]
+
+Deploy tw-opencode-plugin to OPENCODE_DIR (default: ~/.config/opencode).
+Superpowers is disabled by default. Pass --with-superpowers to install and
+activate it alongside this plugin.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--with-superpowers)
+			WITH_SUPERPOWERS=true
+			;;
+		--without-superpowers)
+			WITH_SUPERPOWERS=false
+			;;
+		-h | --help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "Unknown option: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+	shift
+done
 
 echo "Deploying tw-opencode-plugin..."
 echo "  Source: ${PLUGIN_DIR}"
 echo "  Target: ${OPENCODE_DIR}"
+echo "  Superpowers: ${WITH_SUPERPOWERS}"
 
 link_item() {
 	local source="$1"
@@ -121,16 +154,22 @@ mkdir -p "$PLUGINS_TARGET"
 
 echo ""
 echo "Plugin:"
-link_item "${PLUGIN_DIR}/dist/opencode/index.js" \
+PLUGIN_ENTRY="${PLUGIN_DIR}/dist/opencode/index.js"
+if [ ! -f "$PLUGIN_ENTRY" ]; then
+	echo "  [error] built plugin not found; run 'yarn build' first" >&2
+	exit 1
+fi
+link_item "$PLUGIN_ENTRY" \
 	"${PLUGINS_TARGET}/tw-opencode-plugin.js" \
 	"tw-opencode-plugin"
 
 # ── Superpowers ───────────────────────────────────────────────
-# Cloned to a harness-neutral location since both opencode and pi consume it.
-# Migrated from ${OPENCODE_DIR}/superpowers (handled below).
+# Installed only when requested. The checkout remains available while disabled
+# so switching back does not require cloning it again.
 SUPERPOWERS_DIR="${HOME}/.agents/superpowers"
 SUPERPOWERS_REPO="https://github.com/trevorwhitney/superpowers.git"
 LEGACY_SUPERPOWERS_DIR="${OPENCODE_DIR}/superpowers"
+if [ "$WITH_SUPERPOWERS" = true ]; then
 mkdir -p "$(dirname "$SUPERPOWERS_DIR")"
 
 echo ""
@@ -207,11 +246,44 @@ for cmd_file in "${SUPERPOWERS_DIR}/commands"/*.md; do
 	cmd_name="$(basename "$cmd_file")"
 	copy_item "$cmd_file" "${COMMANDS_TARGET}/${cmd_name}" "superpowers: ${cmd_name}"
 done
+else
+	echo ""
+	echo "Superpowers:"
+	echo "  [disabled] keeping checkout at ${SUPERPOWERS_DIR}"
+
+	if [ -L "${PLUGINS_TARGET}/superpowers.js" ] || [ -f "${PLUGINS_TARGET}/superpowers.js" ]; then
+		rm "${PLUGINS_TARGET}/superpowers.js"
+		echo "  [remove] superpowers plugin"
+	fi
+	if [ -L "${SKILLS_TARGET}/superpowers" ] || [ -d "${SKILLS_TARGET}/superpowers" ]; then
+		rm -rf "${SKILLS_TARGET}/superpowers"
+		echo "  [remove] superpowers skills"
+	fi
+
+	# Remove deprecated commands only when the marker proves they are legacy
+	# Superpowers copies rather than user-authored commands with the same name.
+	for stale_command in brainstorm.md write-plan.md execute-plan.md; do
+		stale_path="${COMMANDS_TARGET}/${stale_command}"
+		if [ -f "$stale_path" ] && grep -q 'Deprecated - use the superpowers:' "$stale_path"; then
+			rm "$stale_path"
+			echo "  [remove] legacy superpowers command: ${stale_command}"
+		fi
+	done
+
+	# These root-level overrides predate namespaced Superpowers skills.
+	for stale_skill in writing-plans subagent-driven-development; do
+		if [ -d "${SKILLS_TARGET}/${stale_skill}" ]; then
+			echo "  [remove] stale plugin skill override: ${stale_skill}"
+			rm -rf "${SKILLS_TARGET}/${stale_skill}"
+		fi
+	done
+fi
 
 # ── Autoresearch (third-party plugin) ────────────────────────
 # https://github.com/moedesux/autoresearch-opencode/blob/master/QUICKSTART.md
 # Cloned to a harness-neutral location, then its own install.sh copies the
 # plugin/skill/command into ${OPENCODE_DIR}. --force skips the interactive prompt.
+if [ "$OPENCODE_DIR" = "${HOME}/.config/opencode" ]; then
 AUTORESEARCH_DIR="${HOME}/.agents/autoresearch-opencode"
 AUTORESEARCH_REPO="https://github.com/moedesux/autoresearch-opencode.git"
 mkdir -p "$(dirname "$AUTORESEARCH_DIR")"
@@ -253,6 +325,11 @@ if [ -f "$autoresearch_install" ]; then
 	fi
 else
 	echo "  [skip] autoresearch install.sh not found"
+fi
+else
+	echo ""
+	echo "Autoresearch:"
+	echo "  [skip] upstream installer does not support custom OPENCODE_DIR targets"
 fi
 
 # ── Workmux (legacy cleanup) ─────────────────────────────────

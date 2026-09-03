@@ -55,15 +55,24 @@ yarn build
 ### Deploy
 
 The deploy script installs skills, commands, agents, and the built plugin into
-your OpenCode config (`~/.config/opencode/`). It also syncs the bundled
-[superpowers](https://github.com/trevorwhitney/superpowers) fork to
-`~/.agents/superpowers` and registers its skills/commands/plugin.
+your OpenCode config (`~/.config/opencode/`). Superpowers is disabled by
+default; its checkout is retained so it can be restored without cloning again.
 
 ```bash
 yarn deploy
 # or
 bash scripts/deploy.sh
 ```
+
+To enable the legacy Superpowers integration:
+
+```bash
+yarn deploy --with-superpowers
+```
+
+Set `OPENCODE_DIR` to deploy into a different OpenCode config directory.
+Autoresearch is skipped for custom targets because its upstream installer
+always writes to `~/.config/opencode`.
 
 Then restart OpenCode to pick up the plugin and skill changes.
 
