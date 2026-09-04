@@ -23,7 +23,6 @@ import {
   scanForGoalMarkers,
 } from "../goal.js";
 import { TODO_TRACKING_AWARENESS } from "../todo-tracking/index.js";
-import { loadCommands as loadWorkmuxCommands } from "../workmux/index.js";
 import { TOOL_PRIORITY_RULES } from "../tool-priority-rules.js";
 import { OBSIDIAN_DOCS_RULES } from "../obsidian-docs-rules.js";
 import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
@@ -62,7 +61,6 @@ const COMBINED_RULES = [
 ].join("\n");
 
 export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl }) => {
-  const workmuxCommands = await loadWorkmuxCommands();
   const slot = agentSlot();
   await publishServer(serversDir(), worktree, slot, serverUrl).catch(() => {});
 
@@ -187,12 +185,7 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
         case "session.status": {
           const statusEvent = event as EventSessionStatus;
           const { sessionID, status } = statusEvent.properties;
-          if (status.type === "busy") {
-            await $`workmux set-window-status working`.quiet().nothrow();
-          }
           if (status.type === "idle") {
-            await $`workmux set-window-status done`.quiet().nothrow();
-
             // Check last assistant message for stall detection and goal markers
             try {
               const msgs = await client.session.messages({ path: { id: sessionID }, query: { limit: 5 } });
@@ -208,34 +201,20 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
             } catch { /* best effort */ }
 
             const goal = getGoal(sessionID);
-            const result = await handleSessionIdle(client, sessionID, {
+            await handleSessionIdle(client, sessionID, {
               activeGoal: goal?.objective,
             });
-            if (result.continued) {
-              await $`workmux set-window-status working`.quiet().nothrow();
-            }
           }
           break;
         }
-        case "permission.asked":
-        case "question.asked":
-          await $`workmux set-window-status waiting`.quiet().nothrow();
-          break;
-        case "session.idle":
-          await $`workmux set-window-status done`.quiet().nothrow();
-          break;
         case "session.created": {
           const createdProps = event.properties as { id?: string } | undefined;
           if (createdProps?.id) {
             resetSessionContinueCount(createdProps.id);
           }
           await registerAgentdSession(event as never).catch(() => {});
-          await $`workmux set-window-status clear`.quiet().nothrow();
           break;
         }
-        case "global.disposed":
-          await $`workmux set-window-status clear`.quiet().nothrow();
-          break;
 
       }
     },
@@ -394,7 +373,6 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
     config: async (config) => {
       config.command = {
         ...config.command,
-        ...workmuxCommands,
         goal: {
           template: "goal",
           description: "Session goal. /goal <text> to set, /goal to show, /goal pause|resume|clear",

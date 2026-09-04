@@ -333,16 +333,16 @@ else
 fi
 
 # ── Workmux (legacy cleanup) ─────────────────────────────────
-# Workmux status and commands are now integrated into tw-opencode-plugin.
-# Clean up artifacts from the previous deploy approach.
 if [ -L "${PLUGINS_TARGET}/workmux-status.ts" ]; then
 	echo "  [remove] legacy workmux-status.ts plugin"
 	rm "${PLUGINS_TARGET}/workmux-status.ts"
 fi
-if [ -d "${SKILLS_TARGET}/workmux" ]; then
-	echo "  [remove] legacy workmux skills directory"
-	rm -rf "${SKILLS_TARGET}/workmux"
-fi
+for stale_skill in workmux coordinator worktree; do
+	if [ -L "${SKILLS_TARGET}/${stale_skill}" ] || [ -d "${SKILLS_TARGET}/${stale_skill}" ]; then
+		echo "  [remove] legacy workmux skill: ${stale_skill}"
+		rm -rf "${SKILLS_TARGET}/${stale_skill}"
+	fi
+done
 for cmd in coordinator merge open-pr rebase worktree; do
 	if [ -f "${COMMANDS_TARGET}/${cmd}.md" ]; then
 		echo "  [remove] legacy workmux command: ${cmd}.md"

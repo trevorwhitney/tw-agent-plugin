@@ -1,4 +1,4 @@
-# Worktrees
+# Workspaces
 
-Place worktrees as siblings to this project directory, under `~/workspace/project/`.
-For example, a worktree tracking branch `foo` should go to `~/workspace/project/foo`.
+Use the workspace platform to create and manage isolated worktrees. Do not create
+or relocate worktrees manually unless the user explicitly requests it.

@@ -99,8 +99,8 @@ Detailed instructions for the agent when this skill is loaded.
 
 ### Adding a custom tool
 
-Edit `src/opencode/index.ts`. Most shared logic lives under `src/review/`,
-`src/workmux/`, and `src/shared/`.
+Edit `src/opencode/index.ts`. Most shared logic lives under `src/review/` and
+`src/shared/`.
 
 ```typescript
 import type { Plugin } from "@opencode-ai/plugin";

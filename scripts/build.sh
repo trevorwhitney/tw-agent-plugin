@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Remove outputs for source files that were deleted or renamed.
+rm -rf dist
+
 # Compile TypeScript
 tsc
-
-# Copy vendor markdown files that tsc doesn't emit
-for module in workmux; do
-  rm -rf "dist/${module}/vendor"
-  mkdir -p "dist/${module}"
-  cp -r "src/${module}/vendor" "dist/${module}/vendor"
-done
