@@ -13,9 +13,9 @@ Focus areas:
 - **Verification gaps**: How will you know each step succeeded? Is success criteria defined?
 - **Risk & failure modes**: What could go wrong? Points of no return without rollback?
 - **Feasibility**: Are all steps actually achievable given the stated context and constraints?
-- **Duplication / Reuse failures**: Does the plan create anything that likely already exists in the codebase? Does it introduce parallel abstractions instead of extending existing ones? Are there tasks missing a Reuse section that should have one?
+- **Duplication / Reuse failures**: Does the plan create anything that likely already exists in the codebase? Does it introduce parallel abstractions instead of extending existing ones?
 
-Be specific: reference section names, step numbers, and quote the plan. Explain WHY each issue matters and suggest a concrete fix (usually: delete it, simplify it, or restructure it).
+Be specific: reference sections, decisions, or steps and quote the plan. Explain WHY each issue matters and suggest a concrete fix (usually: delete it, simplify it, or restructure it).
 
 Bias toward REMOVING things. A shorter plan that solves the task is always better than a thorough plan that over-delivers.`;
 

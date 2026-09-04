@@ -5,12 +5,13 @@
 export const OBSIDIAN_DOCS_RULES = `<obsidian-docs-rules>
 ## Spec & Plan Storage
 
-When creating specs or plans (\`.md\` files from brainstorming, writing-plans, etc.):
+When creating a persistent spec or plan:
 
 1. Write to Obsidian vault first:
    - Specs: \`/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/specs/<filename>\`
    - Plans: \`/Users/twhitney/Library/CloudStorage/GoogleDrive-trevorjwhitney@gmail.com/My Drive/Obsidian/grafana/planning/plans/<filename>\`
-2. Symlink back: \`ln -sf "<obsidian-path>" "docs/superpowers/{specs,plans}/<filename>"\`
-3. Never write directly to \`docs/superpowers/\` — always Obsidian + symlink.
+2. Ensure the corresponding \`docs/specs/\` or \`docs/plans/\` directory exists.
+3. Symlink the Obsidian file into the corresponding repository directory.
+4. Never write the repository copy directly — always use Obsidian + symlink.
 
 </obsidian-docs-rules>`;

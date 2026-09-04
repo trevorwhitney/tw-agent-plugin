@@ -67,7 +67,7 @@ Never touch (leave exact; each counts as one word): code blocks, inline code, id
 
 ## Comment hygiene
 
-Flag comments that describe the process that produced the code instead of the code itself. Plans, specs, brainstorm notes, and roadmaps — including everything under `docs/superpowers/` — are not shipped with the code. Comments must not reference them.
+Flag comments that describe the process that produced the code instead of the code itself. Internal plans, specs, brainstorm notes, and roadmaps are not shipped with the code. Comments must not reference them.
 
 Flag any of:
 
@@ -81,7 +81,7 @@ Flag any of:
 | ❌ Bad | ✅ Good |
 |---|---|
 | `// Task 3: validate input per plan` | `// Reject empty names; downstream assumes non-empty.` |
-| `// Implements step 2.1 of docs/superpowers/plans/x.md` | (delete — the code already implements it) |
+| `// Implements step 2.1 of docs/plans/x.md` | (delete — the code already implements it) |
 | `// Per the spec, retry up to 5 times` | `// Retry up to 5 times to absorb transient 503s from the upstream.` |
 | Doc comment walks through `does A, then B, then C, then returns D` | Doc comment states purpose + contract; A/B/C/D explanations move inline next to the code they describe |
 | `// TODO from brainstorm: handle unicode` | `// TODO: handle unicode` (or delete if not a real follow-up) |

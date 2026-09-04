@@ -9,15 +9,11 @@ tw-plugin/
 ├── src/
 │   └── opencode/index.ts       # OpenCode plugin entry point (custom tools & hooks)
 ├── skills/                     # Skills
+│   ├── coordinator/
 │   ├── github/
-│   ├── grafana/
-│   ├── fix-correctness-bug/
-│   ├── explain-correctness-failure/
-│   ├── debug-ci-failure/
 │   ├── tdd-workflow/
-│   ├── writing-plans/
-│   ├── subagent-driven-development/
-│   └── security-review/
+│   ├── worktree/
+│   └── ...
 ├── commands/                   # Slash commands
 ├── agents/                     # Agent definitions
 └── scripts/deploy.sh           # Deploys to OpenCode config
@@ -75,6 +71,14 @@ Autoresearch is skipped for custom targets because its upstream installer
 always writes to `~/.config/opencode`.
 
 Then restart OpenCode to pick up the plugin and skill changes.
+
+## Default workflow
+
+The plugin executes clear, bounded requests directly. Planning is proportional:
+use a short in-chat outline when it helps, and create a durable spec or plan only
+when requested or when complex coordination needs one. Delegated implementation
+uses concise task briefs with outcomes, constraints, acceptance criteria, and
+verification instead of exhaustive implementation plans.
 
 ## Development
 

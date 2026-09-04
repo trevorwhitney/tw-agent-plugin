@@ -1,7 +1,7 @@
 import type { PromptSet, LabeledReview, ReviewerLabel } from "../types.js";
 
 const SPEC_REVIEW_INSTRUCTIONS = `\
-Your prime directive: A SPEC WITH HOLES WILL PRODUCE A BAD PLAN. Find the holes.
+Your prime directive: A SPEC WITH HOLES WILL PRODUCE A BAD IMPLEMENTATION. Find the holes.
 
 Focus areas:
 - **Completeness**: TODOs, placeholders, "TBD", incomplete sections, sections saying "to be defined later" or "will spec when X is done."
@@ -9,7 +9,7 @@ Focus areas:
 - **Consistency**: Internal contradictions, conflicting requirements, sections that disagree with each other.
 - **Clarity**: Ambiguous requirements that could be interpreted multiple ways. If you can read a requirement two different ways, flag it.
 - **YAGNI**: Unrequested features, over-engineering, premature abstraction, extensibility points not yet needed.
-- **Scope**: Is this focused enough for a single implementation plan, or does it cover multiple independent subsystems that should be separate specs?
+- **Scope**: Is this focused enough for a coherent implementation, or does it cover multiple independent subsystems that should be separate specs?
 - **Architecture**: Units with clear boundaries, well-defined interfaces, independently understandable and testable. Can you understand what each unit does without reading its internals?
 
 Look especially hard for:

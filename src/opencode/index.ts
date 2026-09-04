@@ -30,6 +30,7 @@ import { GIT_COMMIT_RULES } from "../git-commit-rules.js";
 import { COMMENT_RULES } from "../comment-rules.js";
 import { ORCHESTRATION_RULES } from "../orchestration-rules.js";
 import { SECRET_HANDLING_RULES } from "../secret-redaction/rules.js";
+import { DEVELOPMENT_WORKFLOW_RULES } from "../development-workflow-rules.js";
 import {
   redact,
   captureSecretsFromCommand,
@@ -55,6 +56,7 @@ const COMBINED_RULES = [
   GIT_COMMIT_RULES,
   COMMENT_RULES,
   TODO_TRACKING_AWARENESS,
+  DEVELOPMENT_WORKFLOW_RULES,
   ORCHESTRATION_RULES,
   SECRET_HANDLING_RULES,
 ].join("\n");
@@ -65,9 +67,8 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
   await publishServer(serversDir(), worktree, slot, serverUrl).catch(() => {});
 
   return {
-    // Inject rules into the first user message of each session rather than
-    // as system messages on every step.  This matches the approach used by
-    // superpowers.js and avoids per-step system-message token bloat.
+    // Inject rules into the first user message to avoid repeating them in the
+    // system prompt on every agent step.
     "experimental.chat.messages.transform": async (_input, output) => {
       if (!output.messages.length) return;
       const firstUser = output.messages.find(
