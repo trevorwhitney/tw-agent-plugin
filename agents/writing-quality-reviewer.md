@@ -1,7 +1,7 @@
 ---
 description: Review changed comments, docstrings, and product-facing docs for comment style, comment hygiene, and ASD-STE100 Simplified Technical English. Read-only. Runs after the implementer, in parallel with the code-quality reviewer.
 mode: subagent
-model: anthropic/claude-opus-4-8
+model: openai/gpt-5.6-luna
 tools:
   write: false
   edit: false

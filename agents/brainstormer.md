@@ -1,7 +1,7 @@
 ---
 description: Codebase research. Use when you need to understand why something is structured the way it is, find similar prior art, or check whether a proposed design matches how the codebase actually works.
 mode: subagent
-model: anthropic/claude-sonnet-4-6
+model: anthropic/claude-opus-5
 tools:
   write: false
   edit: false

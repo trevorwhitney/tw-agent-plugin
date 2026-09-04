@@ -1,7 +1,7 @@
 ---
 description: Turn a request, issue, or spec into the smallest useful implementation outline. Use when sequencing, risk, or coordination benefits from explicit planning.
 mode: subagent
-model: anthropic/claude-opus-4-8
+model: openai/gpt-5.6-terra
 tools:
   write: false
   edit: false
