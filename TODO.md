@@ -1,0 +1,11 @@
+- [x] Inspect the merge skill and Superset workspace CLI
+- [x] Replace workmux merge and cleanup with Git and Superset commands
+- [x] Verify the updated skill and final diff
+- [x] Inventory repository and deployed skill directories
+- [x] Move target-only skills into the repository
+- [x] Make repository skills authoritative during deployment
+- [x] Deploy and verify repository and target skills match
+- [x] Audit repository skills for workmux references
+- [x] Rewrite the worktree skill for Superset
+- [x] Rewrite the coordinator skill for Superset
+- [x] Redeploy and verify Superset-native skills

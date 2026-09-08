@@ -326,6 +326,7 @@ if [ -f "$autoresearch_install" ]; then
 else
 	echo "  [skip] autoresearch install.sh not found"
 fi
+copy_dir "${PLUGIN_DIR}/skills/autoresearch" "${SKILLS_TARGET}/autoresearch" "autoresearch (repository source)"
 else
 	echo ""
 	echo "Autoresearch:"
@@ -337,16 +338,19 @@ if [ -L "${PLUGINS_TARGET}/workmux-status.ts" ]; then
 	echo "  [remove] legacy workmux-status.ts plugin"
 	rm "${PLUGINS_TARGET}/workmux-status.ts"
 fi
-for stale_skill in workmux coordinator worktree; do
-	if [ -L "${SKILLS_TARGET}/${stale_skill}" ] || [ -d "${SKILLS_TARGET}/${stale_skill}" ]; then
-		echo "  [remove] legacy workmux skill: ${stale_skill}"
-		rm -rf "${SKILLS_TARGET}/${stale_skill}"
-	fi
-done
 for cmd in coordinator merge open-pr rebase worktree; do
 	if [ -f "${COMMANDS_TARGET}/${cmd}.md" ]; then
 		echo "  [remove] legacy workmux command: ${cmd}.md"
 		rm "${COMMANDS_TARGET}/${cmd}.md"
+	fi
+done
+
+for deployed_skill_dir in "${SKILLS_TARGET}"/*/; do
+	[ -d "$deployed_skill_dir" ] || continue
+	deployed_skill_name="$(basename "$deployed_skill_dir")"
+	if [ "$deployed_skill_name" != "superpowers" ] && [ ! -d "${PLUGIN_DIR}/skills/${deployed_skill_name}" ]; then
+		echo "  [remove] untracked skill: ${deployed_skill_name}"
+		rm -rf "$deployed_skill_dir"
 	fi
 done
 
