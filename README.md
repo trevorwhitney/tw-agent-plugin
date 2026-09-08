@@ -9,10 +9,8 @@ tw-plugin/
 ├── src/
 │   └── opencode/index.ts       # OpenCode plugin entry point (custom tools & hooks)
 ├── skills/                     # Skills
-│   ├── coordinator/
 │   ├── github/
 │   ├── tdd-workflow/
-│   ├── worktree/
 │   └── ...
 ├── commands/                   # Slash commands
 ├── agents/                     # Agent definitions
