@@ -26,6 +26,7 @@ describe("loadOpencodePluginConfig", () => {
     expect(c.review["code-review"].agents).toEqual(["code-reviewer", "challenger", "performance-reviewer", "ship-it"]);
     expect(c.review["plan-review"].agents).toEqual(["challenger", "brainstormer"]);
     expect(c.review["spec-review"].agents).toEqual(["challenger", "brainstormer"]);
+    expect(c.review.timeoutMs).toBe(600_000);
   });
 
   it("reads per-type keys when present", async () => {

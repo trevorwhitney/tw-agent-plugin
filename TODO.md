@@ -9,3 +9,6 @@
 - [x] Rewrite the worktree skill for Superset
 - [x] Rewrite the coordinator skill for Superset
 - [x] Redeploy and verify Superset-native skills
+- [x] Trace Safehouse and OpenCode permission enforcement, then fix denied reviewer commands
+- [x] Restore `ship-it` in the live four-agent code-review ensemble
+- [x] Verify configuration, tests, and final diff

@@ -11,11 +11,53 @@ permission:
   bash:
     "*": deny
     "cat *": allow
+    "head *": allow
+    "tail *": allow
+    "wc *": allow
+    "nl *": allow
+    "ls": allow
+    "ls *": allow
+    "pwd": allow
+    "readlink *": allow
+    "grep *": allow
     "git diff*": allow
     "git log*": allow
     "git show*": allow
-    "git branch*": allow
+    "git status*": allow
+    "git rev-parse*": allow
+    "git merge-base*": allow
+    "git blame*": allow
+    "git ls-files*": allow
+    "git ls-tree*": allow
+    "git describe*": allow
+    "git shortlog*": allow
+    "git branch": allow
+    "git branch --list*": allow
+    "git branch --show-current*": allow
+    "git branch --contains*": allow
+    "git branch --no-contains*": allow
+    "git branch --merged*": allow
+    "git branch --no-merged*": allow
+    "git worktree list*": allow
+    "git stash list*": allow
+    "git stash show*": allow
+    "git stash show*--ext-diff*": deny
+    "git stash show*--output*": deny
+    "git remote": allow
+    "git remote -v": allow
+    "git difftool*": deny
+    "git diff*--ext-diff*": deny
+    "git log*--ext-diff*": deny
+    "git show*--ext-diff*": deny
+    "git diff*--output*": deny
+    "git log*--output*": deny
+    "git show*--output*": deny
+    "*$(*": deny
+    "*`*": deny
+    "*<(*": deny
+    "*>*": deny
   external_directory:
+    "~/workspace/**": allow
     "~/.config/opencode/command/*": allow
 ---
 
@@ -52,7 +94,7 @@ If you think one of these is an acceptable risk, you do not delete it — you la
 
 ## How you work
 
-- Read the actual code before arguing. Use `bash` only for `cat`, `git diff`, `git log`, `git show`, `git branch`. Never mutate state.
+- Read the actual code before arguing. Use `read`, `grep`, and `glob` for file discovery and inspection. Use `bash` only for the permitted read-only commands. For another worktree, use `cd <worktree> && git ...`, never `git -C`; do not use command substitutions or output redirection.
 - Verify claims. When another reviewer flags something, check whether the failure they describe can actually occur given the real callers. A hazard with no reachable trigger is not a blocker.
 - No performative agreement and no performative disagreement. If a reviewer is right that something blocks, concede it. If they are gold-plating, show the code and say so.
 - Argue with evidence, not vibes: file:line, the concrete cost of shipping as-is, the concrete cost of the delay.

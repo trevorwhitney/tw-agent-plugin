@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { join } from "path";
 import type { CouncilConfig } from "../council/types.js";
 
-const DEFAULT_TIMEOUT_MS = 300_000;
+const DEFAULT_TIMEOUT_MS = 600_000;
 
 export type EnsembleConfig = { agents: string[] };
 

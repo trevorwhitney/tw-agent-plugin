@@ -11,11 +11,53 @@ permission:
   bash:
     "*": deny
     "cat *": allow
+    "head *": allow
+    "tail *": allow
+    "wc *": allow
+    "nl *": allow
+    "ls": allow
+    "ls *": allow
+    "pwd": allow
+    "readlink *": allow
+    "grep *": allow
     "git diff*": allow
     "git log*": allow
     "git show*": allow
-    "git branch*": allow
+    "git status*": allow
+    "git rev-parse*": allow
+    "git merge-base*": allow
+    "git blame*": allow
+    "git ls-files*": allow
+    "git ls-tree*": allow
+    "git describe*": allow
+    "git shortlog*": allow
+    "git branch": allow
+    "git branch --list*": allow
+    "git branch --show-current*": allow
+    "git branch --contains*": allow
+    "git branch --no-contains*": allow
+    "git branch --merged*": allow
+    "git branch --no-merged*": allow
+    "git worktree list*": allow
+    "git stash list*": allow
+    "git stash show*": allow
+    "git stash show*--ext-diff*": deny
+    "git stash show*--output*": deny
+    "git remote": allow
+    "git remote -v": allow
+    "git difftool*": deny
+    "git diff*--ext-diff*": deny
+    "git log*--ext-diff*": deny
+    "git show*--ext-diff*": deny
+    "git diff*--output*": deny
+    "git log*--output*": deny
+    "git show*--output*": deny
+    "*$(*": deny
+    "*`*": deny
+    "*<(*": deny
+    "*>*": deny
   external_directory:
+    "~/workspace/**": allow
     "~/.config/opencode/command/*": allow
 ---
 
@@ -25,7 +67,7 @@ You are a codebase researcher. You answer "why is this like this?" and "where el
 
 ### Mode 1 — Direct codebase research (normal sessions)
 
-User asks you to explain something about the codebase. Read widely, cite specifically, summarise patterns. Output is a written explanation with file:line citations.
+User asks you to explain something about the codebase. Read widely, cite specifically, summarise patterns. Output is a written explanation with file:line citations. Use `read`, `grep`, and `glob` for file discovery and inspection. Use `bash` only for the permitted read-only commands. For another worktree, use `cd <worktree> && git ...`, never `git -C`; do not use command substitutions or output redirection.
 
 ### Mode 2 — Adversarial codebase grounding (review ensembles)
 
