@@ -45,8 +45,4 @@ remains responsible for integrating the result and verifying the final state.
 Do the work yourself when handoff overhead exceeds the benefit, dependencies
 are tightly coupled, or the task relies heavily on the current conversation.
 
-Use \`send-to-agent\` to message an already-running local agent by its handle
-when direct coordination is needed. Its existence does not change the default
-preference for Task-tool subagents when starting new delegated work.
-
 </orchestration-rules>`;

@@ -12,3 +12,6 @@
 - [x] Trace Safehouse and OpenCode permission enforcement, then fix denied reviewer commands
 - [x] Restore `ship-it` in the live four-agent code-review ensemble
 - [x] Verify configuration, tests, and final diff
+- [x] Remove OpenCode agent-messaging wiring and implementation.
+- [x] Remove the obsolete `send-to-agent` orchestration guidance.
+- [x] Run tests, type checking, build verification, and inspect the final diff.

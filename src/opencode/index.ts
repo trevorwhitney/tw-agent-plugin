@@ -38,13 +38,6 @@ import {
 import { createOpencodeRunner } from "./runner.js";
 import { astGrepSearch, astGrepReplace } from "../ast-grep/tool.js";
 import { createGcxTools } from "../grafana/gcx-tools.js";
-import {
-  serversDir,
-  agentSlot,
-  publishServer,
-  unpublishServer,
-  createSendToAgentTool,
-} from "../agent-messaging/index.js";
 import { createReportTool, createEscalateTool } from "../agentd/tools.js";
 import { registerAgentdSession } from "../agentd/register.js";
 
@@ -60,10 +53,7 @@ const COMBINED_RULES = [
   SECRET_HANDLING_RULES,
 ].join("\n");
 
-export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl }) => {
-  const slot = agentSlot();
-  await publishServer(serversDir(), worktree, slot, serverUrl).catch(() => {});
-
+export const TwOpenCodePlugin: Plugin = async ({ $, client }) => {
   return {
     // Inject rules into the first user message to avoid repeating them in the
     // system prompt on every agent step.
@@ -367,7 +357,6 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
       }),
       report: createReportTool(),
       escalate: createEscalateTool(),
-      "send-to-agent": createSendToAgentTool(),
     },
 
     config: async (config) => {
@@ -378,10 +367,6 @@ export const TwOpenCodePlugin: Plugin = async ({ $, client, worktree, serverUrl 
           description: "Session goal. /goal <text> to set, /goal to show, /goal pause|resume|clear",
         },
       };
-    },
-
-    dispose: async () => {
-      await unpublishServer(serversDir(), worktree, slot).catch(() => {});
     },
   };
 };
